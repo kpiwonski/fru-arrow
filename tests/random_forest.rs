@@ -1,4 +1,5 @@
-use minarrow::{Array, IntegerArray};
+use minarrow::RowSelection;
+use minarrow::{Array, FieldArray, IntegerArray, Table};
 use minrf::RandomForestClassifier;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 const NROW: usize = 100;
@@ -9,8 +10,8 @@ fn sample_0_1(rng: &mut impl Rng, k: usize) -> Vec<i64> {
         .collect::<Vec<i64>>()
 }
 
-fn new_arr_i64(x: Vec<i64>) -> Array {
-    Array::from_int64(IntegerArray::<i64>::from_slice(&x))
+fn new_arr_i64(name: &str, x: Vec<i64>) -> FieldArray {
+    FieldArray::from_arr(name, Array::from_int64(IntegerArray::<i64>::from_slice(&x)))
 }
 
 #[test]
@@ -19,14 +20,24 @@ fn rf_check_0_1_3ft() {
     let x1 = sample_0_1(&mut rng, NROW);
     let y: Vec<u32> = x1.iter().map(|&x| x as u32).collect();
 
-    let a1 = new_arr_i64(x1);
-    let a2 = new_arr_i64(sample_0_1(&mut rng, NROW));
-    let a3 = new_arr_i64(sample_0_1(&mut rng, NROW));
+    let a1 = new_arr_i64("x1", x1);
+    let a2 = new_arr_i64("x2", sample_0_1(&mut rng, NROW));
+    let a3 = new_arr_i64("x3", sample_0_1(&mut rng, NROW));
 
     let yy = IntegerArray::<u32>::from_slice(&y);
 
     let df_vec = vec![a1, a2, a3];
-    let rf = RandomForestClassifier::fit(df_vec, yy, 2, NROW, 3, 100, 1, false, true, false, 1);
+    let rf = RandomForestClassifier::fit(
+        Table::new("table".into(), df_vec.into()),
+        yy,
+        2,
+        100,
+        1,
+        false,
+        true,
+        false,
+        1,
+    );
     let imp = rf.importance();
 
     assert!(imp[0] > 0.2);
@@ -47,19 +58,30 @@ fn rf_importance_0_1_interactions() {
         .collect();
     let y = IntegerArray::<u32>::from_slice(&y_ins);
 
-    let mut df_vec = vec![new_arr_i64(x1), new_arr_i64(x2)];
-    for _i in 1..100 {
-        df_vec.push(new_arr_i64(sample_0_1(&mut rng, NROW)));
+    let mut df_vec = vec![new_arr_i64("x1", x1), new_arr_i64("x2", x2)];
+    for i in 1..100 {
+        df_vec.push(new_arr_i64(
+            &format!("rand{}", i),
+            sample_0_1(&mut rng, NROW),
+        ));
     }
-    let ncol = df_vec.len();
 
-    let rf = RandomForestClassifier::fit(df_vec, y, 2, NROW, ncol, 1000, 10, false, true, false, 1);
+    let rf = RandomForestClassifier::fit(
+        Table::new("table".into(), df_vec.into()),
+        y,
+        2,
+        1000,
+        10,
+        false,
+        true,
+        false,
+        1,
+    );
     let imp = rf.importance_normalised();
 
     assert!(imp[0] > 0.5);
     assert!(imp[1] > 0.5);
     for i in 2..imp.len() {
-        // println!("{:?}", i);
         assert!(imp[i] < 0.2);
     }
 }
@@ -77,14 +99,26 @@ fn rf_oob_0_1_interactions() {
         .collect();
     let y = IntegerArray::<u32>::from_slice(&y_ins);
 
-    let mut df_vec = vec![new_arr_i64(x1), new_arr_i64(x2)];
-    for _i in 1..10 {
-        df_vec.push(new_arr_i64(sample_0_1(&mut rng, NROW)));
+    let mut df_vec = vec![new_arr_i64("x1", x1), new_arr_i64("x2", x2)];
+    for i in 1..10 {
+        df_vec.push(new_arr_i64(
+            &format!("rand{}", i),
+            sample_0_1(&mut rng, NROW),
+        ));
     }
-    let ncol = df_vec.len();
     let yy = y.clone();
 
-    let rf = RandomForestClassifier::fit(df_vec, y, 2, NROW, ncol, 1000, 3, false, false, true, 1);
+    let rf = RandomForestClassifier::fit(
+        Table::new("table".into(), df_vec.into()),
+        y,
+        2,
+        1000,
+        3,
+        false,
+        false,
+        true,
+        1,
+    );
 
     let score = rf
         .oob()

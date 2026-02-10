@@ -1,4 +1,4 @@
-use minarrow::{Array, IntegerArray};
+use minarrow::{Array, IntegerArray, Table};
 use xrf::{Forest, RfRng};
 
 mod attribute;
@@ -37,11 +37,9 @@ impl RandomForestClassifier {
     }
 
     pub fn fit(
-        x: Vec<Array>,
+        x: Table,
         y: IntegerArray<u32>,
         ncat: u32,
-        nrow: usize,
-        ncol: usize,
         trees: usize,
         tries: usize,
         save_forest: bool,
@@ -49,7 +47,7 @@ impl RandomForestClassifier {
         oob: bool,
         seed: u64,
     ) -> Self {
-        let df = DataFrameClassification::new(x, y, ncat, ncol, nrow);
+        let df = DataFrameClassification::new(x, y, ncat);
         let forest = RandomForestClassifier(Forest::new(
             &df,
             trees,
@@ -63,17 +61,9 @@ impl RandomForestClassifier {
         forest
     }
 
-    pub fn predict(
-        &self,
-        x: Vec<Array>,
-        ncat: u32,
-        nrow: usize,
-        ncol: usize,
-        threads: usize,
-        seed: u64,
-    ) -> Vec<u32> {
+    pub fn predict(&self, x: Table, ncat: u32, threads: usize, seed: u64) -> Vec<u32> {
         // let mut rng = RfRng::from_seed(seed, 1); //TODO correct sometime
-        let df = DataFrameClassification::new(x, IntegerArray::default(), ncat, ncol, nrow);
+        let df = DataFrameClassification::new(x, IntegerArray::default(), ncat);
         let pred = self.0.predict_parallel(&df, threads);
         let mut pred: Vec<_> = pred.predictions().map(|(e, v)| (e, v.collapse())).collect();
 

@@ -10,3 +10,4 @@ minarrow = {version="0.7.2", features=["extended_numeric_types", "extended_categ
 
 [dev-dependencies]
 rand = "0.9"
+minarrow = {version="0.7.2", features=["extended_numeric_types", "extended_categorical", "views"]}

@@ -1,11 +1,11 @@
-use crate::attribute::{DfPivot, SplittingIterator};
+use crate::attribute::{DfPivot, FYSampler, SplittingIterator};
 use minarrow::{Array, IntegerArray, NumericArray};
 use xrf::{Mask, RfInput, RfRng, VoteAggregator};
 
 mod da;
 mod impurity;
 mod votes;
-use votes::Votes;
+pub use votes::Votes;
 
 pub struct DataFrame {
     features: Vec<Array>,
@@ -17,6 +17,7 @@ pub struct DataFrame {
 
 impl RfInput for DataFrame {
     type FeatureId = u32;
+    type FeatureSampler = FYSampler<Self>;
     type DecisionSlice = DecisionSlice;
     type Pivot = DfPivot;
     type Vote = u32;
@@ -28,9 +29,10 @@ impl RfInput for DataFrame {
     fn feature_count(&self) -> usize {
         self.ncol
     }
-    fn random_feature(&self, rng: &mut RfRng) -> Self::FeatureId {
-        rng.upto(self.ncol) as Self::FeatureId
+    fn feature_sampler(&self) -> Self::FeatureSampler {
+        super::attribute::FYSampler::new(self)
     }
+
     fn decision_slice(&self, mask: &Mask) -> Self::DecisionSlice {
         DecisionSlice::new(mask, &self.decision, self.ncat)
     }
@@ -48,6 +50,17 @@ impl RfInput for DataFrame {
                 NumericArray::Int64(x) => impurity::scan_i64(x, y, on),
                 _ => panic!("Unsupported data type!"),
             }, // TODO support categories
+            Array::TextArray(arr) => match arr {
+                minarrow::TextArray::Categorical8(x) => impurity::scan_factor(
+                    &x.into_iter().map(|&xx| xx as i64).collect::<Vec<_>>(),
+                    x.unique_values.len() as u32,
+                    y,
+                    on,
+                    rng,
+                ),
+                _ => panic!("###"),
+            },
+            // Array::CategoricalArray(x) => impurity::scan_factor(x, xc, ys, mask, rng),
             Array::BooleanArray(x) => impurity::scan_bin(x, y, on),
             _ => panic!("Unsupported data type!"),
         }
@@ -60,16 +73,6 @@ impl RfInput for DataFrame {
     ) -> impl Iterator<Item = bool> {
         let feature = &self.features[using as usize];
         SplittingIterator::new(feature, by, on.iter())
-    }
-    fn score_accuracy<I: Iterator<Item = Self::Vote>>(&self, mask: &Mask, other: I) -> f64 {
-        let ok: usize = mask
-            .iter()
-            .map(|&e| self.decision[e])
-            .zip(other)
-            .map(|(a, b)| if a.eq(&b) { 1 } else { 0 })
-            .sum();
-        //TODO Maybe this should normalise by mask len?
-        (ok as f64) / (self.observation_count() as f64)
     }
 }
 
@@ -98,7 +101,7 @@ impl xrf::DecisionSlice<u32> for DecisionSlice {
     fn is_pure(&self) -> bool {
         self.summary.is_pure()
     }
-    fn condense(&self) -> u32 {
+    fn condense(&self, rng: &mut RfRng) -> u32 {
         self.summary.collapse()
     }
 }

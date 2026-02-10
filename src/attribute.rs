@@ -1,4 +1,7 @@
+use std::marker::PhantomData;
+
 use minarrow::{Array, BooleanArray, FloatArray, IntegerArray, NumericArray};
+use xrf::{FeatureSampler, RfInput, RfRng};
 
 #[derive(Debug)]
 pub enum DfPivot {
@@ -68,5 +71,38 @@ where
         } else {
             None
         }
+    }
+}
+
+pub struct FYSampler<I> {
+    mixed: Vec<u32>,
+    left: usize,
+    marker: PhantomData<I>,
+}
+
+impl<I: RfInput<FeatureId = u32>> FYSampler<I> {
+    pub fn new(input: &I) -> Self {
+        Self {
+            mixed: (0..input.feature_count()).map(|x| x as u32).collect(),
+            left: input.feature_count(),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<I: RfInput<FeatureId = u32>> FeatureSampler<I> for FYSampler<I> {
+    fn random_feature(&mut self, rng: &mut RfRng) -> I::FeatureId {
+        let sel = rng.up_to(self.left);
+        let ans = self.mixed[sel];
+        self.left = self.left.checked_sub(1).unwrap();
+        self.mixed.swap(sel, self.left);
+        ans
+    }
+    fn reload(&mut self) {
+        self.left = self.mixed.len();
+    }
+    fn reset(&mut self) {
+        self.mixed = (0..self.mixed.len()).map(|x| x as u32).collect();
+        self.left = self.mixed.len();
     }
 }

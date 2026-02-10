@@ -1,5 +1,5 @@
 use super::DataFrame;
-use xrf::VoteAggregator;
+use xrf::{FairBest, RfRng, VoteAggregator};
 
 #[derive(Clone)]
 pub struct Votes(pub Vec<u32>); //TODO: Fix impurity to make it private
@@ -10,6 +10,33 @@ impl Votes {
     }
     pub fn new(ncat: u32) -> Self {
         Self(std::iter::repeat_n(0, ncat as usize).collect())
+    }
+    pub fn collapse(&self) -> u32 {
+        self.0
+            .iter()
+            .enumerate()
+            .fold(None, |best, (cls, count)| {
+                if best.map(|x: (usize, u32)| x.1).unwrap_or(0) < *count {
+                    Some((cls, *count))
+                } else {
+                    best
+                }
+            })
+            .map(|x| x.0 as u32)
+            .unwrap_or(u32::MAX)
+    }
+
+    pub fn collapse_empty_random(&self, rng: &mut RfRng) -> u32 {
+        self.0
+            .iter()
+            .enumerate()
+            .fold(FairBest::new(), |mut best, (cls, count)| {
+                best.ingest(count, cls, rng);
+                best
+            })
+            .consume()
+            .map(|(_score, class)| class as u32)
+            .unwrap()
     }
 }
 
@@ -25,19 +52,5 @@ impl VoteAggregator<DataFrame> for Votes {
             .iter_mut()
             .zip(other.0.iter())
             .for_each(|(t, s)| *t += s);
-    }
-    fn collapse(&self) -> u32 {
-        self.0
-            .iter()
-            .enumerate()
-            .fold(None, |best, (cls, count)| {
-                if best.map(|x: (usize, u32)| x.1).unwrap_or(0) < *count {
-                    Some((cls, *count))
-                } else {
-                    best
-                }
-            })
-            .map(|x| x.0 as u32)
-            .unwrap_or(u32::MAX)
     }
 }

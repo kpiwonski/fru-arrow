@@ -4,7 +4,7 @@ use super::DataFrame;
 use xrf::{FairBest, RfRng, VoteAggregator};
 
 #[derive(Clone)]
-pub struct Votes(pub Vec<u64>); //TODO: Fix impurity to make it private
+pub struct Votes(pub Vec<usize>); //TODO: Fix impurity to make it private
 
 impl Votes {
     pub fn is_pure(&self) -> bool {

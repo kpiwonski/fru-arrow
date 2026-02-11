@@ -40,7 +40,7 @@ impl RandomForestClassifier {
         CategoricalArray::from_slices(&res, &self.decision_unique_values)
     }
 
-    pub fn oob_votes(&self) -> Vec<Vec<u64>> {
+    pub fn oob_votes(&self) -> Vec<Vec<usize>> {
         let mut oob: Vec<_> = self.forest.oob().map(|(e, v)| (e, v.0.clone())).collect();
 
         oob.sort_unstable_by_key(|(k, _)| *k);

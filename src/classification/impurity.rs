@@ -68,7 +68,7 @@ pub fn scan_factor(
                     acc.merge(v);
                     acc
                 });
-            let in_left: u64 = left.0.iter().sum();
+            let in_left: usize = left.0.iter().sum();
 
             let score: f64 = ys
                 .summary
@@ -76,7 +76,7 @@ pub fn scan_factor(
                 .iter()
                 .zip(left.0.iter())
                 .map(|(&all, &left)| {
-                    let ahead = (n - in_left as usize) as f64;
+                    let ahead = (n - in_left) as f64;
                     let scanned = in_left as f64;
                     let n = n as f64;
                     let right = (all - left) as f64;

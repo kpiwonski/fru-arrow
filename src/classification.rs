@@ -1,5 +1,5 @@
 use crate::attribute::{DfPivot, FYSampler, SplittingIterator};
-use minarrow::{Array, IntegerArray, NumericArray, Table};
+use minarrow::{Array, CategoricalArray, NumericArray, Table};
 use xrf::{Mask, RfInput, RfRng, VoteAggregator};
 
 mod da;
@@ -7,10 +7,12 @@ mod impurity;
 mod votes;
 pub use votes::Votes;
 
+pub type DecisionBasicType = u64;
+
 pub struct DataFrame {
     features: Table,
-    decision: IntegerArray<u32>,
-    ncat: u32,
+    decision: CategoricalArray<DecisionBasicType>,
+    ncat: DecisionBasicType,
 }
 
 impl RfInput for DataFrame {
@@ -18,7 +20,7 @@ impl RfInput for DataFrame {
     type FeatureSampler = FYSampler<Self>;
     type DecisionSlice = DecisionSlice;
     type Pivot = DfPivot;
-    type Vote = u32;
+    type Vote = DecisionBasicType;
     type VoteAggregator = Votes;
     type AccuracyDecreaseAggregator = da::ClsDaAggregator;
     fn observation_count(&self) -> usize {
@@ -47,7 +49,7 @@ impl RfInput for DataFrame {
                 NumericArray::Float64(x) => impurity::scan_f64(x, y, on),
                 NumericArray::Int64(x) => impurity::scan_i64(x, y, on),
                 _ => panic!("Unsupported data type!"),
-            }, // TODO support categories
+            },
             Array::TextArray(arr) => match arr {
                 minarrow::TextArray::Categorical8(x) => impurity::scan_factor(
                     &x.into_iter().map(|&xx| xx as i64).collect::<Vec<_>>(),
@@ -58,7 +60,6 @@ impl RfInput for DataFrame {
                 ),
                 _ => panic!("###"),
             },
-            // Array::CategoricalArray(x) => impurity::scan_factor(x, xc, ys, mask, rng),
             Array::BooleanArray(x) => impurity::scan_bin(x, y, on),
             _ => panic!("Unsupported data type!"),
         }
@@ -75,12 +76,16 @@ impl RfInput for DataFrame {
 }
 
 pub struct DecisionSlice {
-    values: Vec<u32>,
-    ncat: u32,
+    values: Vec<DecisionBasicType>,
+    ncat: DecisionBasicType,
     summary: Votes,
 }
 impl DecisionSlice {
-    fn new(mask: &Mask, values: &IntegerArray<u32>, ncat: u32) -> Self {
+    fn new(
+        mask: &Mask,
+        values: &CategoricalArray<DecisionBasicType>,
+        ncat: DecisionBasicType,
+    ) -> Self {
         let mut summary = Votes::new(ncat);
         let values = mask
             .iter()
@@ -95,18 +100,19 @@ impl DecisionSlice {
     }
 }
 
-impl xrf::DecisionSlice<u32> for DecisionSlice {
+impl xrf::DecisionSlice<DecisionBasicType> for DecisionSlice {
     fn is_pure(&self) -> bool {
         self.summary.is_pure()
     }
-    fn condense(&self, rng: &mut RfRng) -> u32 {
-        self.summary.collapse()
+    fn condense(&self, rng: &mut RfRng) -> DecisionBasicType {
+        self.summary.collapse_empty_random(rng)
     }
 }
 
 impl DataFrame {
     //TOOD: Better order of arguments, maybe?
-    pub fn new(features: Table, decision: IntegerArray<u32>, ncat: u32) -> Self {
+    pub fn new(features: Table, decision: CategoricalArray<DecisionBasicType>) -> Self {
+        let ncat = decision.unique_values.len() as DecisionBasicType;
         Self {
             features,
             decision,

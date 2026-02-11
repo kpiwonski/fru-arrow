@@ -1,5 +1,5 @@
 use super::{DecisionSlice, Votes};
-use crate::attribute::DfPivot;
+use crate::{attribute::DfPivot, classification::DecisionBasicType};
 use minarrow::BooleanArray;
 use xrf::{Mask, RfRng, VoteAggregator};
 
@@ -68,7 +68,7 @@ pub fn scan_factor(
                     acc.merge(v);
                     acc
                 });
-            let in_left: u32 = left.0.iter().sum();
+            let in_left: u64 = left.0.iter().sum();
 
             let score: f64 = ys
                 .summary
@@ -93,7 +93,7 @@ pub fn scan_factor(
 }
 
 pub fn scan_f64(x: &[f64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, f64)> {
-    let mut bound: Vec<(f64, u32)> = mask
+    let mut bound: Vec<(f64, DecisionBasicType)> = mask
         .iter()
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
@@ -135,7 +135,7 @@ pub fn scan_f64(x: &[f64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, 
 }
 
 pub fn scan_i64(x: &[i64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, f64)> {
-    let mut bound: Vec<(i64, u32)> = mask
+    let mut bound: Vec<(i64, DecisionBasicType)> = mask
         .iter()
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))

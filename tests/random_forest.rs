@@ -1,5 +1,5 @@
-use minarrow::RowSelection;
 use minarrow::{Array, FieldArray, IntegerArray, Table};
+use minarrow::{CategoricalArray, RowSelection};
 use minrf::RandomForestClassifier;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 const NROW: usize = 100;
@@ -18,19 +18,18 @@ fn new_arr_i64(name: &str, x: Vec<i64>) -> FieldArray {
 fn rf_check_0_1_3ft() {
     let mut rng = StdRng::seed_from_u64(1);
     let x1 = sample_0_1(&mut rng, NROW);
-    let y: Vec<u32> = x1.iter().map(|&x| x as u32).collect();
+    let y: Vec<u64> = x1.iter().map(|&x| x as u64).collect();
 
     let a1 = new_arr_i64("x1", x1);
     let a2 = new_arr_i64("x2", sample_0_1(&mut rng, NROW));
     let a3 = new_arr_i64("x3", sample_0_1(&mut rng, NROW));
 
-    let yy = IntegerArray::<u32>::from_slice(&y);
+    let unique_values = vec![String::from("false"), String::from("true")];
 
     let df_vec = vec![a1, a2, a3];
     let rf = RandomForestClassifier::fit(
         Table::new("table".into(), df_vec.into()),
-        yy,
-        2,
+        CategoricalArray::from_slices(&y, &unique_values),
         100,
         1,
         false,
@@ -51,12 +50,12 @@ fn rf_importance_0_1_interactions() {
     let x1 = sample_0_1(&mut rng, 100);
     let x2 = sample_0_1(&mut rng, 100);
 
-    let y_ins: Vec<u32> = x1
+    let y_ins: Vec<_> = x1
         .iter()
         .zip(x2.iter())
-        .map(|row| (*row.0 == 1 && *row.1 == 1) as u32)
+        .map(|row| (*row.0 == 1 && *row.1 == 1) as u64)
         .collect();
-    let y = IntegerArray::<u32>::from_slice(&y_ins);
+    let unique_values = vec![String::from("false"), String::from("true")];
 
     let mut df_vec = vec![new_arr_i64("x1", x1), new_arr_i64("x2", x2)];
     for i in 1..100 {
@@ -68,8 +67,7 @@ fn rf_importance_0_1_interactions() {
 
     let rf = RandomForestClassifier::fit(
         Table::new("table".into(), df_vec.into()),
-        y,
-        2,
+        CategoricalArray::from_slices(&y_ins, &unique_values),
         1000,
         10,
         false,
@@ -92,12 +90,11 @@ fn rf_oob_0_1_interactions() {
     let x1 = sample_0_1(&mut rng, NROW);
     let x2 = sample_0_1(&mut rng, NROW);
 
-    let y_ins: Vec<u32> = x1
+    let y_ins: Vec<_> = x1
         .iter()
         .zip(x2.iter())
-        .map(|row| (*row.0 == 1 && *row.1 == 1) as u32)
+        .map(|row| (*row.0 == 1 && *row.1 == 1) as u64)
         .collect();
-    let y = IntegerArray::<u32>::from_slice(&y_ins);
 
     let mut df_vec = vec![new_arr_i64("x1", x1), new_arr_i64("x2", x2)];
     for i in 1..10 {
@@ -106,12 +103,13 @@ fn rf_oob_0_1_interactions() {
             sample_0_1(&mut rng, NROW),
         ));
     }
+    let unique_values = vec![String::from("false"), String::from("true")];
+    let y = CategoricalArray::from_slices(&y_ins, &unique_values);
     let yy = y.clone();
 
     let rf = RandomForestClassifier::fit(
         Table::new("table".into(), df_vec.into()),
         y,
-        2,
         1000,
         3,
         false,

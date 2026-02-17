@@ -34,9 +34,9 @@ checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
 name = "minarrow"
-version = "0.7.2"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afe4bd696af379d0aabf9b7cc4590c88937d088b3741183818c87bb1448e9a41"
+checksum = "3b38a9a227d207ad70676078f4ff248df6d0bbc577822082f4756d0b4c951e38"
 dependencies = [
  "libc",
  "num-traits",

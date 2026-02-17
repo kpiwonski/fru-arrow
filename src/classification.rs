@@ -123,9 +123,11 @@ impl xrf::DecisionSlice<DecisionBasicType> for DecisionSlice {
 }
 
 impl DataFrame {
-    //TOOD: Better order of arguments, maybe?
-    pub fn new(features: Table, decision: CategoricalArray<DecisionBasicType>) -> Self {
-        let ncat = decision.unique_values.len() as DecisionBasicType;
+    pub fn new(
+        features: Table,
+        decision: CategoricalArray<DecisionBasicType>,
+        ncat: DecisionBasicType,
+    ) -> Self {
         Self {
             features,
             decision,

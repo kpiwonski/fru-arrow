@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use super::{DecisionSlice, Votes};
 use crate::{attribute::DfPivot, classification::DecisionBasicType};
 use minarrow::BooleanArray;
@@ -33,16 +35,16 @@ pub fn scan_bin(x: &BooleanArray<()>, ys: &DecisionSlice, mask: &Mask) -> Option
     Some((DfPivot::Logical, score))
 }
 
-pub fn scan_factor(
-    x: &[i64],
-    xc: u32,
+pub fn scan_categorical<T: Copy + Ord + TryInto<usize> + Into<DfPivot>>(
+    x: &[T],
+    xc: usize,
     ys: &DecisionSlice,
     mask: &Mask,
     _rng: &mut RfRng,
 ) -> Option<(DfPivot, f64)> {
     if xc > 10 {
         //When there is too many combinations, just treat it as ordered
-        return scan_i64(x, ys, mask);
+        return scan_integer(x, ys, mask);
     }
     if xc < 2 {
         return None;
@@ -54,7 +56,7 @@ pub fn scan_factor(
     mask.iter()
         .map(|&e| x[e])
         .zip(ys.values.iter())
-        .for_each(|(x, &y)| va[x as usize].ingest_vote(y));
+        .for_each(|(x, &y)| va[x.try_into().ok().unwrap()].ingest_vote(y));
     let sub_max: u64 = (1 << (xc - 1)) - 1;
 
     (0..sub_max)
@@ -92,13 +94,17 @@ pub fn scan_factor(
         .map(|(bitmask, score)| (DfPivot::Subset(bitmask), score))
 }
 
-pub fn scan_f64(x: &[f64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, f64)> {
-    let mut bound: Vec<(f64, DecisionBasicType)> = mask
+pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
+    x: &[T],
+    ys: &DecisionSlice,
+    mask: &Mask,
+) -> Option<(DfPivot, f64)> {
+    let mut bound: Vec<(T, DecisionBasicType)> = mask
         .iter()
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
         .collect();
-    bound.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
+    bound.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     let n = bound.len();
     let mut left = Votes::new(ys.ncat);
@@ -109,7 +115,7 @@ pub fn scan_f64(x: &[f64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, 
         .fold(None, |acc: Option<(f64, f64)>, (x, next_x, y)| {
             scanned += 1;
             left.ingest_vote(y);
-            if x.total_cmp(&next_x).is_ne() {
+            if x.partial_cmp(&next_x).unwrap().is_ne() {
                 let score: f64 = ys
                     .summary
                     .0
@@ -125,7 +131,7 @@ pub fn scan_f64(x: &[f64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, 
                     })
                     .sum();
                 if score > acc.map(|x| x.1).unwrap_or(f64::NEG_INFINITY) {
-                    return Some((0.5 * (x + next_x), score));
+                    return Some((Into::<f64>::into(x + next_x) * 0.5, score));
                 }
             }
             acc
@@ -134,8 +140,12 @@ pub fn scan_f64(x: &[f64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, 
     ans
 }
 
-pub fn scan_i64(x: &[i64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, f64)> {
-    let mut bound: Vec<(i64, DecisionBasicType)> = mask
+pub fn scan_integer<T: Copy + Ord + Into<DfPivot>>(
+    x: &[T],
+    ys: &DecisionSlice,
+    mask: &Mask,
+) -> Option<(DfPivot, f64)> {
+    let mut bound: Vec<(T, DecisionBasicType)> = mask
         .iter()
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
@@ -148,7 +158,7 @@ pub fn scan_i64(x: &[i64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, 
     let ans = bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
-        .fold(None, |acc: Option<(i64, f64)>, (x, next_x, y)| {
+        .fold(None, |acc: Option<(T, f64)>, (x, next_x, y)| {
             scanned += 1;
             left.ingest_vote(y);
             if x.cmp(&next_x).is_ne() {
@@ -172,6 +182,33 @@ pub fn scan_i64(x: &[i64], ys: &DecisionSlice, mask: &Mask) -> Option<(DfPivot, 
             }
             acc
         })
-        .map(|(thresh, score)| (DfPivot::Integer(thresh), score));
+        .map(|(thresh, score)| (thresh.into(), score));
     ans
 }
+
+macro_rules! impl_from_uint_for_dfpivot {
+    ($($t:ty),* $(,)?) => {
+        $(
+            impl From<$t> for DfPivot {
+                fn from(value: $t) -> Self {
+                    DfPivot::UInteger(value as u64)
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_from_int_for_dfpivot {
+    ($($t:ty),* $(,)?) => {
+        $(
+            impl From<$t> for DfPivot {
+                fn from(value: $t) -> Self {
+                    DfPivot::Integer(value as i64)
+                }
+            }
+        )*
+    };
+}
+
+impl_from_int_for_dfpivot!(i8, i16, i32, i64);
+impl_from_uint_for_dfpivot!(u8, u16, u32, u64);

@@ -1,5 +1,5 @@
 use crate::attribute::{DfPivot, FYSampler, SplittingIterator};
-use minarrow::{Array, CategoricalArray, NumericArray, Table};
+use minarrow::{Array, CategoricalArray, NumericArray, Table, TextArray};
 use xrf::{Mask, RfInput, RfRng, VoteAggregator};
 
 mod da;
@@ -46,19 +46,32 @@ impl RfInput for DataFrame {
         let feature = &self.features.cols[using as usize];
         match &feature.array {
             Array::NumericArray(num) => match num {
-                NumericArray::Float64(x) => impurity::scan_f64(x, y, on),
-                NumericArray::Int64(x) => impurity::scan_i64(x, y, on),
+                NumericArray::Float32(x) => impurity::scan_float(x, y, on),
+                NumericArray::Float64(x) => impurity::scan_float(x, y, on),
+                NumericArray::UInt8(x) => impurity::scan_integer(x, y, on),
+                NumericArray::UInt16(x) => impurity::scan_integer(x, y, on),
+                NumericArray::UInt32(x) => impurity::scan_integer(x, y, on),
+                NumericArray::UInt64(x) => impurity::scan_integer(x, y, on),
+                NumericArray::Int8(x) => impurity::scan_integer(x, y, on),
+                NumericArray::Int16(x) => impurity::scan_integer(x, y, on),
+                NumericArray::Int32(x) => impurity::scan_integer(x, y, on),
+                NumericArray::Int64(x) => impurity::scan_integer(x, y, on),
                 _ => panic!("Unsupported data type!"),
             },
             Array::TextArray(arr) => match arr {
-                minarrow::TextArray::Categorical8(x) => impurity::scan_factor(
-                    &x.into_iter().map(|&xx| xx as i64).collect::<Vec<_>>(),
-                    x.unique_values.len() as u32,
-                    y,
-                    on,
-                    rng,
-                ),
-                _ => panic!("###"),
+                TextArray::Categorical8(x) => {
+                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                }
+                TextArray::Categorical16(x) => {
+                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                }
+                TextArray::Categorical32(x) => {
+                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                }
+                TextArray::Categorical64(x) => {
+                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                }
+                _ => panic!("Unsupported data type!"),
             },
             Array::BooleanArray(x) => impurity::scan_bin(x, y, on),
             _ => panic!("Unsupported data type!"),

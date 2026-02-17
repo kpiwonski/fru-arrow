@@ -1,6 +1,7 @@
-use minarrow::{Array, FieldArray, IntegerArray, Table};
-use minarrow::{CategoricalArray, RowSelection};
+use minarrow::CategoricalArray;
+use minarrow::{Array, BooleanArray, FieldArray, FloatArray, IntegerArray, Table};
 use minrf::RandomForestClassifier;
+use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 const NROW: usize = 100;
 
@@ -12,6 +13,21 @@ fn sample_0_1(rng: &mut impl Rng, k: usize) -> Vec<i64> {
 
 fn new_arr_i64(name: &str, x: Vec<i64>) -> FieldArray {
     FieldArray::from_arr(name, Array::from_int64(IntegerArray::<i64>::from_slice(&x)))
+}
+
+fn new_arr_f64(name: &str, x: Vec<f64>) -> FieldArray {
+    FieldArray::from_arr(name, Array::from_float64(FloatArray::<f64>::from_slice(&x)))
+}
+
+fn new_arr_bool(name: &str, x: Vec<bool>) -> FieldArray {
+    FieldArray::from_arr(name, Array::from_bool(BooleanArray::<()>::from_slice(&x)))
+}
+
+fn new_arr_categorical64(name: &str, x: Vec<u64>, dict: &[String]) -> FieldArray {
+    FieldArray::from_arr(
+        name,
+        Array::from_categorical64(CategoricalArray::<u64>::from_slices(&x, dict)),
+    )
 }
 
 #[test]
@@ -125,4 +141,52 @@ fn rf_oob_0_1_interactions() {
         .map(|(&x, &y)| (x == y) as u64)
         .sum::<u64>();
     assert!(score == 100);
+}
+
+#[test]
+fn rf_check_0_1_4ft_mixed_dtypes() {
+    let mut rng = StdRng::seed_from_u64(1);
+    let x_int: Vec<i64> = (0..NROW)
+        .map(|_| *[0i64, 2 ^ 60].choose(&mut rng).unwrap())
+        .collect();
+
+    let x_cat: Vec<u64> = sample_0_1(&mut rng, NROW)
+        .into_iter()
+        .map(|x| x as u64)
+        .collect();
+    let x_float: Vec<f64> = (0..NROW)
+        .map(|_| *[0f64, (2 ^ 60) as f64].choose(&mut rng).unwrap())
+        .collect();
+    let x_bool: Vec<bool> = sample_0_1(&mut rng, NROW)
+        .into_iter()
+        .map(|x| x == 1)
+        .collect();
+
+    let y: Vec<u64> = x_cat.clone();
+
+    let unique_values = vec![String::from("false"), String::from("true")];
+    let cat_unique_values = vec![String::from("cat_false"), String::from("cat_true")];
+
+    let df_vec = vec![
+        new_arr_categorical64("x_cat64", x_cat, &cat_unique_values),
+        new_arr_i64("x_int64", x_int),
+        new_arr_f64("x_float64", x_float),
+        new_arr_bool("x_bool", x_bool),
+    ];
+    let rf = RandomForestClassifier::fit(
+        Table::new("table".into(), df_vec.into()),
+        CategoricalArray::from_slices(&y, &unique_values),
+        100,
+        1,
+        false,
+        true,
+        false,
+        1,
+    );
+    let imp = rf.importance();
+
+    assert!(imp[0] > 0.2);
+    assert!(imp[1] < 0.05);
+    assert!(imp[2] < 0.05);
+    assert!(imp[3] < 0.05);
 }

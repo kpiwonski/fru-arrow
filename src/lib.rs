@@ -1,4 +1,4 @@
-use minarrow::{Array, CategoricalArray, IntegerArray, Table, Vec64};
+use minarrow::{CategoricalArray, Table, Vec64};
 use xrf::{Forest, RfRng};
 
 mod attribute;
@@ -56,10 +56,12 @@ impl RandomForestClassifier {
         importance: bool,
         oob: bool,
         seed: u64,
+        threads: Option<usize>,
     ) -> Self {
         let decision_unique_values = y.unique_values.clone();
-        let df = DataFrameClassification::new(x, y);
-        let forest = Forest::new(
+        let df =
+            DataFrameClassification::new(x, y, decision_unique_values.len() as DecisionBasicType);
+        let forest = Forest::new_parallel(
             &df,
             trees,
             tries,
@@ -67,7 +69,11 @@ impl RandomForestClassifier {
             importance,
             oob,
             seed,
-            // 1, //TODO
+            threads.unwrap_or_else(|| {
+                std::thread::available_parallelism()
+                    .map(|n| n.get())
+                    .unwrap_or(1)
+            }),
         );
         RandomForestClassifier {
             forest,
@@ -78,12 +84,23 @@ impl RandomForestClassifier {
     pub fn predict(
         &self,
         x: Table,
-        threads: usize,
         seed: u64,
+        threads: Option<usize>,
     ) -> CategoricalArray<DecisionBasicType> {
         let mut rng = RfRng::from_seed(seed, 1);
-        let df = DataFrameClassification::new(x, CategoricalArray::default());
-        let pred = self.forest.predict_parallel(&df, threads);
+        let df = DataFrameClassification::new(
+            x,
+            CategoricalArray::default(),
+            self.decision_unique_values.len() as DecisionBasicType,
+        );
+        let pred = self.forest.predict_parallel(
+            &df,
+            threads.unwrap_or_else(|| {
+                std::thread::available_parallelism()
+                    .map(|n| n.get())
+                    .unwrap_or(1)
+            }),
+        );
         let mut pred: Vec<_> = pred
             .predictions()
             .map(|(e, v)| (e, v.collapse_empty_random(&mut rng)))
@@ -92,5 +109,29 @@ impl RandomForestClassifier {
         pred.sort_unstable_by_key(|(k, _)| *k);
         let res: Vec<_> = pred.into_iter().map(|(_, x)| x).collect();
         CategoricalArray::from_slices(&res, &self.decision_unique_values)
+    }
+
+    pub fn predict_votes(&self, x: Table, threads: Option<usize>) -> Vec<Vec<usize>> {
+        let df = DataFrameClassification::new(
+            x,
+            CategoricalArray::default(),
+            self.decision_unique_values.len() as DecisionBasicType,
+        );
+        let mut pred: Vec<_> = self
+            .forest
+            .predict_parallel(
+                &df,
+                threads.unwrap_or_else(|| {
+                    std::thread::available_parallelism()
+                        .map(|n| n.get())
+                        .unwrap_or(1)
+                }),
+            )
+            .predictions()
+            .map(|(e, v)| (e, v.0.clone()))
+            .collect();
+
+        pred.sort_unstable_by_key(|(k, _)| *k);
+        pred.into_iter().map(|(_, x)| x).collect()
     }
 }

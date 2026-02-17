@@ -52,6 +52,7 @@ fn rf_check_0_1_3ft() {
         true,
         false,
         1,
+        None,
     );
     let imp = rf.importance();
 
@@ -90,6 +91,7 @@ fn rf_importance_0_1_interactions() {
         true,
         false,
         1,
+        None,
     );
     let imp = rf.importance_normalised();
 
@@ -132,6 +134,7 @@ fn rf_oob_0_1_interactions() {
         false,
         true,
         1,
+        None,
     );
 
     let score = rf
@@ -139,6 +142,67 @@ fn rf_oob_0_1_interactions() {
         .iter()
         .zip(yy.iter())
         .map(|(&x, &y)| (x == y) as u64)
+        .sum::<u64>();
+    assert!(score == 100);
+
+    let score = rf
+        .oob_votes()
+        .iter()
+        .zip(yy.iter())
+        .map(|(x, &y)| ((x[1] as f64 / (x[0] + x[1]) as f64 > 0.5) as u64 == y) as u64)
+        .sum::<u64>();
+    assert!(score == 100);
+}
+
+#[test]
+fn rf_predict_0_1_interactions() {
+    let nrow = 200;
+    let mut rng = StdRng::seed_from_u64(1);
+    let x1 = sample_0_1(&mut rng, nrow);
+    let x2 = sample_0_1(&mut rng, nrow);
+
+    let y_ins: Vec<_> = x1
+        .iter()
+        .zip(x2.iter())
+        .map(|row| (*row.0 == 1 && *row.1 == 1) as u64)
+        .collect();
+
+    let mut df_vec = vec![new_arr_i64("x1", x1), new_arr_i64("x2", x2)];
+    for i in 1..10 {
+        df_vec.push(new_arr_i64(
+            &format!("rand{}", i),
+            sample_0_1(&mut rng, nrow),
+        ));
+    }
+    let unique_values = vec![String::from("false"), String::from("true")];
+    let y = CategoricalArray::from_slices(&y_ins[0..100], &unique_values);
+    let df = Table::new("table".into(), df_vec.into());
+
+    let rf = RandomForestClassifier::fit(
+        df.slice(0, 100).to_table(),
+        y,
+        1000,
+        3,
+        true,
+        false,
+        false,
+        1,
+        None,
+    );
+
+    let score = rf
+        .predict(df.slice(100, 100).to_table(), 1, None)
+        .iter()
+        .zip(y_ins[100..200].iter())
+        .map(|(&x, &y)| (x == y) as u64)
+        .sum::<u64>();
+    assert!(score == 100);
+
+    let score = rf
+        .predict_votes(df.slice(100, 100).to_table(), None)
+        .iter()
+        .zip(y_ins[100..200].iter())
+        .map(|(x, &y)| ((x[1] as f64 / (x[0] + x[1]) as f64 > 0.5) as u64 == y) as u64)
         .sum::<u64>();
     assert!(score == 100);
 }
@@ -182,6 +246,7 @@ fn rf_check_0_1_4ft_mixed_dtypes() {
         true,
         false,
         1,
+        None,
     );
     let imp = rf.importance();
 

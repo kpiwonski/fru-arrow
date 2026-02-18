@@ -1,40 +1,35 @@
 use crate::attribute::{DfPivot, FYSampler, SplittingIterator};
-use minarrow::{Array, CategoricalArray, NumericArray, Table, TextArray};
-use xrf::{Mask, RfInput, RfRng, VoteAggregator};
+use minarrow::{Array, FloatArray, NumericArray, Table, TextArray};
+use xrf::{Mask, RfInput, RfRng};
 
 mod da;
 mod impurity;
 mod votes;
-pub use votes::Votes;
+use votes::Votes;
 
-pub type ClsDecisionBasicType = u64;
+pub type RegDecisionBasicType = f64;
 
-pub struct DataFrame {
+pub struct DataFrameRegression {
     features: Table,
-    decision: CategoricalArray<ClsDecisionBasicType>,
-    ncat: ClsDecisionBasicType,
+    decision: FloatArray<RegDecisionBasicType>,
 }
 
-impl RfInput for DataFrame {
+impl RfInput for DataFrameRegression {
     type FeatureId = usize;
     type FeatureSampler = FYSampler<Self>;
     type DecisionSlice = DecisionSlice;
     type Pivot = DfPivot;
-    type Vote = ClsDecisionBasicType;
+    type Vote = RegDecisionBasicType;
     type VoteAggregator = Votes;
-    type AccuracyDecreaseAggregator = da::ClsDaAggregator;
+    type AccuracyDecreaseAggregator = da::DaAggregator;
     fn observation_count(&self) -> usize {
         self.features.n_rows()
     }
     fn feature_count(&self) -> usize {
         self.features.n_cols()
     }
-    fn feature_sampler(&self) -> Self::FeatureSampler {
-        super::attribute::FYSampler::new(self)
-    }
-
     fn decision_slice(&self, mask: &Mask) -> Self::DecisionSlice {
-        DecisionSlice::new(mask, &self.decision, self.ncat)
+        DecisionSlice::new(mask, &self.decision)
     }
     fn new_split(
         &self,
@@ -42,8 +37,9 @@ impl RfInput for DataFrame {
         using: Self::FeatureId,
         y: &Self::DecisionSlice,
         rng: &mut RfRng,
-    ) -> Option<(Self::Pivot, f64)> {
-        let feature = &self.features.cols[using as usize];
+    ) -> Option<(Self::Pivot, RegDecisionBasicType)> {
+        // TODO
+        let feature = &self.features.cols[using];
         match &feature.array {
             Array::NumericArray(num) => match num {
                 NumericArray::Float32(x) => impurity::scan_float(x, y, on),
@@ -83,55 +79,81 @@ impl RfInput for DataFrame {
         using: Self::FeatureId,
         by: &Self::Pivot,
     ) -> impl Iterator<Item = bool> {
-        let feature = &self.features.cols[using];
+        let feature = &self.features.cols[using as usize];
         SplittingIterator::new(&feature.array, by, on.iter())
+    }
+
+    fn feature_sampler(&self) -> Self::FeatureSampler {
+        super::attribute::FYSampler::new(self)
     }
 }
 
 pub struct DecisionSlice {
-    values: Vec<ClsDecisionBasicType>,
-    ncat: ClsDecisionBasicType,
-    summary: Votes,
+    values: Vec<RegDecisionBasicType>,
+    summary: VarAggregator,
 }
+
 impl DecisionSlice {
-    fn new(
-        mask: &Mask,
-        values: &CategoricalArray<ClsDecisionBasicType>,
-        ncat: ClsDecisionBasicType,
-    ) -> Self {
-        let mut summary = Votes::new(ncat);
+    fn new(mask: &Mask, values: &[RegDecisionBasicType]) -> Self {
+        let mut summary = VarAggregator::new();
         let values = mask
             .iter()
             .map(|&e| values[e])
-            .inspect(|&x| summary.ingest_vote(x))
+            .inspect(|&e| summary.ingest(e))
             .collect();
-        DecisionSlice {
-            values,
-            ncat,
-            summary,
-        }
+        DecisionSlice { values, summary }
     }
 }
 
-impl xrf::DecisionSlice<ClsDecisionBasicType> for DecisionSlice {
+impl xrf::DecisionSlice<RegDecisionBasicType> for DecisionSlice {
     fn is_pure(&self) -> bool {
-        self.summary.is_pure()
+        self.values.len() < 5
     }
-    fn condense(&self, rng: &mut RfRng) -> ClsDecisionBasicType {
-        self.summary.collapse_empty_random(rng)
+    fn condense(&self, _rng: &mut RfRng) -> RegDecisionBasicType {
+        self.summary.ave()
     }
 }
 
-impl DataFrame {
-    pub fn new(
-        features: Table,
-        decision: CategoricalArray<ClsDecisionBasicType>,
-        ncat: ClsDecisionBasicType,
-    ) -> Self {
+impl DataFrameRegression {
+    pub fn new(features: Table, decision: FloatArray<RegDecisionBasicType>) -> Self {
+        Self { features, decision }
+    }
+}
+
+#[derive(Clone)]
+struct VarAggregator {
+    sum: RegDecisionBasicType,
+    sum_sq: RegDecisionBasicType,
+    n: usize,
+}
+
+impl VarAggregator {
+    fn new() -> Self {
         Self {
-            features,
-            decision,
-            ncat,
+            sum: 0.,
+            sum_sq: 0.,
+            n: 0,
         }
+    }
+    fn ingest(&mut self, x: RegDecisionBasicType) {
+        self.sum += x;
+        self.sum_sq += x * x;
+        self.n += 1;
+    }
+    fn degest(&mut self, x: RegDecisionBasicType) {
+        self.sum -= x;
+        self.sum_sq -= x * x;
+        self.n -= 1;
+    }
+    fn ave(&self) -> RegDecisionBasicType {
+        self.sum / (self.n as RegDecisionBasicType)
+    }
+    fn var_n(&self) -> RegDecisionBasicType {
+        self.sum_sq - self.sum * self.sum / (self.n as RegDecisionBasicType)
+    }
+    fn merge(&mut self, other: &Self) {
+        self.sum += other.sum;
+        self.sum_sq += other.sum_sq;
+        self.n += other.n;
     }
 }

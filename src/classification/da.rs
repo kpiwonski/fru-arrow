@@ -1,4 +1,4 @@
-use crate::classification::DecisionBasicType;
+use crate::classification::ClsDecisionBasicType;
 
 use super::DataFrame;
 use minarrow::CategoricalArray;
@@ -6,10 +6,10 @@ use std::collections::HashMap;
 use xrf::{AccuracyDecreaseAggregator, Mask, RfInput};
 
 pub struct ClsDaAggregator {
-    direct: Vec<Option<DecisionBasicType>>,
-    drops: HashMap<u32, isize>,
+    direct: Vec<Option<ClsDecisionBasicType>>,
+    drops: HashMap<usize, isize>,
     n: usize,
-    true_decision: CategoricalArray<DecisionBasicType>,
+    true_decision: CategoricalArray<ClsDecisionBasicType>,
 }
 impl AccuracyDecreaseAggregator<DataFrame> for ClsDaAggregator {
     fn new(input: &DataFrame, on: &Mask, n: usize) -> Self {
@@ -21,7 +21,7 @@ impl AccuracyDecreaseAggregator<DataFrame> for ClsDaAggregator {
             true_decision: input.decision.clone(),
         }
     }
-    fn ingest(&mut self, permutted: Option<u32>, mask: &Mask, vote: &DecisionBasicType) {
+    fn ingest(&mut self, permutted: Option<usize>, mask: &Mask, vote: &ClsDecisionBasicType) {
         if let Some(permutted) = permutted {
             let diff: isize = mask
                 .iter()
@@ -48,7 +48,7 @@ impl AccuracyDecreaseAggregator<DataFrame> for ClsDaAggregator {
             }
         }
     }
-    fn get_direct_vote(&self, e: usize) -> DecisionBasicType {
+    fn get_direct_vote(&self, e: usize) -> ClsDecisionBasicType {
         self.direct.get(e).unwrap().unwrap()
     }
     fn mda_iter(&self) -> impl Iterator<Item = (<DataFrame as RfInput>::FeatureId, f64)> {

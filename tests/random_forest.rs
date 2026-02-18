@@ -1,6 +1,8 @@
-use minarrow::CategoricalArray;
-use minarrow::{Array, BooleanArray, FieldArray, FloatArray, IntegerArray, Table};
-use minrf::RandomForestClassifier;
+use std::panic;
+
+use minarrow::{Array, BooleanArray, FieldArray, FloatArray, IntegerArray, Table, TextArray};
+use minarrow::{CategoricalArray, NumericArray};
+use minrf::RandomForest;
 use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 const NROW: usize = 100;
@@ -31,7 +33,7 @@ fn new_arr_categorical64(name: &str, x: Vec<u64>, dict: &[String]) -> FieldArray
 }
 
 #[test]
-fn rf_check_0_1_3ft() {
+fn rf_cls_check_0_1_3ft() {
     let mut rng = StdRng::seed_from_u64(1);
     let x1 = sample_0_1(&mut rng, NROW);
     let y: Vec<u64> = x1.iter().map(|&x| x as u64).collect();
@@ -43,9 +45,12 @@ fn rf_check_0_1_3ft() {
     let unique_values = vec![String::from("false"), String::from("true")];
 
     let df_vec = vec![a1, a2, a3];
-    let rf = RandomForestClassifier::fit(
+    let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        CategoricalArray::from_slices(&y, &unique_values),
+        FieldArray::from_arr(
+            "y",
+            Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
+        ),
         100,
         1,
         false,
@@ -62,7 +67,7 @@ fn rf_check_0_1_3ft() {
 }
 
 #[test]
-fn rf_importance_0_1_interactions() {
+fn rf_cls_importance_0_1_interactions() {
     let mut rng = StdRng::seed_from_u64(1);
     let x1 = sample_0_1(&mut rng, 100);
     let x2 = sample_0_1(&mut rng, 100);
@@ -82,9 +87,12 @@ fn rf_importance_0_1_interactions() {
         ));
     }
 
-    let rf = RandomForestClassifier::fit(
+    let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        CategoricalArray::from_slices(&y_ins, &unique_values),
+        FieldArray::from_arr(
+            "y",
+            Array::from_categorical64(CategoricalArray::from_slices(&y_ins, &unique_values)),
+        ),
         1000,
         10,
         false,
@@ -103,7 +111,7 @@ fn rf_importance_0_1_interactions() {
 }
 
 #[test]
-fn rf_oob_0_1_interactions() {
+fn rf_cls_oob_0_1_interactions() {
     let mut rng = StdRng::seed_from_u64(1);
     let x1 = sample_0_1(&mut rng, NROW);
     let x2 = sample_0_1(&mut rng, NROW);
@@ -125,9 +133,9 @@ fn rf_oob_0_1_interactions() {
     let y = CategoricalArray::from_slices(&y_ins, &unique_values);
     let yy = y.clone();
 
-    let rf = RandomForestClassifier::fit(
+    let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        y,
+        FieldArray::from_arr("y", Array::from_categorical64(y)),
         1000,
         3,
         false,
@@ -137,8 +145,17 @@ fn rf_oob_0_1_interactions() {
         None,
     );
 
-    let score = rf
-        .oob()
+    let oob_pred = rf.oob(1).array;
+    assert!(matches!(
+        oob_pred,
+        Array::TextArray(TextArray::Categorical64(_))
+    ));
+
+    let Array::TextArray(TextArray::Categorical64(arr)) = oob_pred else {
+        unreachable!()
+    };
+
+    let score = arr
         .iter()
         .zip(yy.iter())
         .map(|(&x, &y)| (x == y) as u64)
@@ -155,7 +172,7 @@ fn rf_oob_0_1_interactions() {
 }
 
 #[test]
-fn rf_predict_0_1_interactions() {
+fn rf_cls_predict_0_1_interactions() {
     let nrow = 200;
     let mut rng = StdRng::seed_from_u64(1);
     let x1 = sample_0_1(&mut rng, nrow);
@@ -178,9 +195,9 @@ fn rf_predict_0_1_interactions() {
     let y = CategoricalArray::from_slices(&y_ins[0..100], &unique_values);
     let df = Table::new("table".into(), df_vec.into());
 
-    let rf = RandomForestClassifier::fit(
+    let rf = RandomForest::fit(
         df.slice(0, 100).to_table(),
-        y,
+        FieldArray::from_arr("y", Array::from_categorical64(y)),
         1000,
         3,
         true,
@@ -190,8 +207,16 @@ fn rf_predict_0_1_interactions() {
         None,
     );
 
-    let score = rf
-        .predict(df.slice(100, 100).to_table(), 1, None)
+    let oob_pred = rf.predict(df.slice(100, 100).to_table(), 1, None).array;
+    assert!(matches!(
+        oob_pred,
+        Array::TextArray(TextArray::Categorical64(_))
+    ));
+
+    let Array::TextArray(TextArray::Categorical64(arr)) = oob_pred else {
+        unreachable!()
+    };
+    let score = arr
         .iter()
         .zip(y_ins[100..200].iter())
         .map(|(&x, &y)| (x == y) as u64)
@@ -208,7 +233,7 @@ fn rf_predict_0_1_interactions() {
 }
 
 #[test]
-fn rf_check_0_1_4ft_mixed_dtypes() {
+fn rf_cls_check_0_1_4ft_mixed_dtypes() {
     let mut rng = StdRng::seed_from_u64(1);
     let x_int: Vec<i64> = (0..NROW)
         .map(|_| *[0i64, 2 ^ 60].choose(&mut rng).unwrap())
@@ -237,9 +262,12 @@ fn rf_check_0_1_4ft_mixed_dtypes() {
         new_arr_f64("x_float64", x_float),
         new_arr_bool("x_bool", x_bool),
     ];
-    let rf = RandomForestClassifier::fit(
+    let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        CategoricalArray::from_slices(&y, &unique_values),
+        FieldArray::from_arr(
+            "y",
+            Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
+        ),
         100,
         1,
         false,
@@ -254,4 +282,174 @@ fn rf_check_0_1_4ft_mixed_dtypes() {
     assert!(imp[1] < 0.05);
     assert!(imp[2] < 0.05);
     assert!(imp[3] < 0.05);
+}
+
+#[test]
+fn rf_reg_check_0_1_3ft() {
+    let mut rng = StdRng::seed_from_u64(1);
+    let x1: Vec<f64> = (0..NROW).map(|x| x as f64).collect();
+    let y: Vec<f64> = x1.iter().map(|&x| 2. * x).collect();
+
+    let a1 = new_arr_f64("x1", x1);
+    let a2 = new_arr_i64("x2", sample_0_1(&mut rng, NROW));
+    let a3 = new_arr_i64("x3", sample_0_1(&mut rng, NROW));
+
+    let df_vec = vec![a1, a2, a3];
+    let rf = RandomForest::fit(
+        Table::new("table".into(), df_vec.into()),
+        FieldArray::from_arr("y", Array::from_float64(FloatArray::from_slice(&y))),
+        100,
+        1,
+        false,
+        true,
+        false,
+        1,
+        None,
+    );
+    let imp = rf.importance();
+
+    assert!(imp[0] > 1000.);
+    assert!(imp[1] < 100.);
+    assert!(imp[2] < 100.);
+}
+
+#[test]
+fn rf_reg_predict_linear() {
+    let nrow = 500;
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let x1: Vec<f64> = (0..nrow).map(|_| rng.random_range(0.0..10.0)).collect();
+    let y_ins = x1.clone();
+    let df_vec = vec![new_arr_f64("x1", x1)];
+    let y = FloatArray::from_slice(&y_ins[..400]);
+    let df = Table::new("table".into(), df_vec.into());
+
+    let rf = RandomForest::fit(
+        df.slice(0, 400).to_table(),
+        FieldArray::from_arr("y", Array::from_float64(y)),
+        1000,
+        1,
+        true,
+        false,
+        false,
+        1,
+        None,
+    );
+
+    let pred = rf.predict(df.slice(400, 100).to_table(), 1, None).array;
+    assert!(matches!(
+        pred,
+        Array::NumericArray(NumericArray::Float64(_))
+    ));
+
+    let Array::NumericArray(NumericArray::Float64(arr)) = pred else {
+        unreachable!()
+    };
+
+    let mae: f64 = arr
+        .iter()
+        .zip(y_ins[400..].iter())
+        .map(|(&x, &y)| (x - y).abs())
+        .sum::<f64>()
+        / 100.;
+    assert!(mae < 0.02);
+}
+
+#[test]
+fn rf_reg_oob_linear() {
+    let nrow = 500;
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let x1: Vec<f64> = (0..nrow).map(|_| rng.random_range(0.0..10.0)).collect();
+    let y_ins = x1.clone();
+    let df_vec = vec![new_arr_f64("x1", x1)];
+    let y = FloatArray::from_slice(&y_ins);
+    let df = Table::new("table".into(), df_vec.into());
+
+    let rf = RandomForest::fit(
+        df,
+        FieldArray::from_arr("y", Array::from_float64(y)),
+        1000,
+        1,
+        false,
+        false,
+        true,
+        1,
+        None,
+    );
+
+    let oob_pred = rf.oob(1).array;
+
+    assert!(matches!(
+        oob_pred,
+        Array::NumericArray(NumericArray::Float64(_))
+    ));
+
+    let Array::NumericArray(NumericArray::Float64(arr)) = oob_pred else {
+        unreachable!()
+    };
+
+    let mae: f64 = arr
+        .iter()
+        .zip(y_ins.iter())
+        .map(|(&x, &y)| (x - y).abs())
+        .sum::<f64>()
+        / 100.;
+    assert!(mae < 0.08);
+}
+
+#[test]
+#[should_panic(
+    expected = "internal error: entered unreachable code: Votes for regression are not supported"
+)]
+fn rf_reg_predict_votes_should_panic() {
+    let nrow = 500;
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let x1: Vec<f64> = (0..nrow).map(|_| rng.random_range(0.0..10.0)).collect();
+    let y_ins = x1.clone();
+    let df_vec = vec![new_arr_f64("x1", x1)];
+    let y = FloatArray::from_slice(&y_ins);
+    let df = Table::new("table".into(), df_vec.into());
+
+    let rf = RandomForest::fit(
+        df.slice(0, 400).to_table(),
+        FieldArray::from_arr("y", Array::from_float64(y)),
+        1000,
+        1,
+        true,
+        false,
+        false,
+        1,
+        None,
+    );
+    rf.predict_votes(df.slice(400, 100).to_table(), None);
+}
+
+#[test]
+#[should_panic(
+    expected = "internal error: entered unreachable code: Votes for regression are not supported"
+)]
+fn rf_reg_oob_votes_should_panic() {
+    let nrow = 500;
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let x1: Vec<f64> = (0..nrow).map(|_| rng.random_range(0.0..10.0)).collect();
+    let y_ins = x1.clone();
+    let df_vec = vec![new_arr_f64("x1", x1)];
+    let y = FloatArray::from_slice(&y_ins);
+    let df = Table::new("table".into(), df_vec.into());
+
+    let rf = RandomForest::fit(
+        df,
+        FieldArray::from_arr("y", Array::from_float64(y)),
+        1000,
+        1,
+        true,
+        false,
+        false,
+        1,
+        None,
+    );
+    rf.oob_votes();
 }

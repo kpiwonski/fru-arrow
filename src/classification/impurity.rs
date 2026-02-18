@@ -1,7 +1,7 @@
 use std::ops::Add;
 
 use super::{DecisionSlice, Votes};
-use crate::{attribute::DfPivot, classification::DecisionBasicType};
+use crate::{attribute::DfPivot, classification::ClsDecisionBasicType};
 use minarrow::BooleanArray;
 use xrf::{Mask, RfRng, VoteAggregator};
 
@@ -99,7 +99,7 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
     ys: &DecisionSlice,
     mask: &Mask,
 ) -> Option<(DfPivot, f64)> {
-    let mut bound: Vec<(T, DecisionBasicType)> = mask
+    let mut bound: Vec<(T, ClsDecisionBasicType)> = mask
         .iter()
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
@@ -145,7 +145,7 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot>>(
     ys: &DecisionSlice,
     mask: &Mask,
 ) -> Option<(DfPivot, f64)> {
-    let mut bound: Vec<(T, DecisionBasicType)> = mask
+    let mut bound: Vec<(T, ClsDecisionBasicType)> = mask
         .iter()
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
@@ -185,30 +185,3 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot>>(
         .map(|(thresh, score)| (thresh.into(), score));
     ans
 }
-
-macro_rules! impl_from_uint_for_dfpivot {
-    ($($t:ty),* $(,)?) => {
-        $(
-            impl From<$t> for DfPivot {
-                fn from(value: $t) -> Self {
-                    DfPivot::UInteger(value as u64)
-                }
-            }
-        )*
-    };
-}
-
-macro_rules! impl_from_int_for_dfpivot {
-    ($($t:ty),* $(,)?) => {
-        $(
-            impl From<$t> for DfPivot {
-                fn from(value: $t) -> Self {
-                    DfPivot::Integer(value as i64)
-                }
-            }
-        )*
-    };
-}
-
-impl_from_int_for_dfpivot!(i8, i16, i32, i64);
-impl_from_uint_for_dfpivot!(u8, u16, u32, u64);

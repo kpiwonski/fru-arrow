@@ -130,22 +130,22 @@ where
 }
 
 pub struct FYSampler<I> {
-    mixed: Vec<u32>,
+    mixed: Vec<usize>,
     left: usize,
     marker: PhantomData<I>,
 }
 
-impl<I: RfInput<FeatureId = u32>> FYSampler<I> {
+impl<I: RfInput<FeatureId = usize>> FYSampler<I> {
     pub fn new(input: &I) -> Self {
         Self {
-            mixed: (0..input.feature_count()).map(|x| x as u32).collect(),
+            mixed: (0..input.feature_count()).collect(),
             left: input.feature_count(),
             marker: PhantomData,
         }
     }
 }
 
-impl<I: RfInput<FeatureId = u32>> FeatureSampler<I> for FYSampler<I> {
+impl<I: RfInput<FeatureId = usize>> FeatureSampler<I> for FYSampler<I> {
     fn random_feature(&mut self, rng: &mut RfRng) -> I::FeatureId {
         let sel = rng.up_to(self.left);
         let ans = self.mixed[sel];
@@ -157,7 +157,34 @@ impl<I: RfInput<FeatureId = u32>> FeatureSampler<I> for FYSampler<I> {
         self.left = self.mixed.len();
     }
     fn reset(&mut self) {
-        self.mixed = (0..self.mixed.len()).map(|x| x as u32).collect();
+        self.mixed = (0..self.mixed.len()).collect();
         self.left = self.mixed.len();
     }
 }
+
+macro_rules! impl_from_uint_for_dfpivot {
+    ($($t:ty),* $(,)?) => {
+        $(
+            impl From<$t> for DfPivot {
+                fn from(value: $t) -> Self {
+                    DfPivot::UInteger(value as u64)
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_from_int_for_dfpivot {
+    ($($t:ty),* $(,)?) => {
+        $(
+            impl From<$t> for DfPivot {
+                fn from(value: $t) -> Self {
+                    DfPivot::Integer(value as i64)
+                }
+            }
+        )*
+    };
+}
+
+impl_from_int_for_dfpivot!(i8, i16, i32, i64);
+impl_from_uint_for_dfpivot!(u8, u16, u32, u64);

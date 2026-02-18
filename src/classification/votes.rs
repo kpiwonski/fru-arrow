@@ -1,4 +1,4 @@
-use crate::classification::DecisionBasicType;
+use crate::classification::ClsDecisionBasicType;
 
 use super::DataFrame;
 use xrf::{FairBest, RfRng, VoteAggregator};
@@ -10,11 +10,11 @@ impl Votes {
     pub fn is_pure(&self) -> bool {
         self.0.iter().filter(|&&x| x > 0).count() <= 1
     }
-    pub fn new(ncat: DecisionBasicType) -> Self {
+    pub fn new(ncat: ClsDecisionBasicType) -> Self {
         Self(std::iter::repeat_n(0, ncat as usize).collect())
     }
 
-    pub fn collapse_empty_random(&self, rng: &mut RfRng) -> DecisionBasicType {
+    pub fn collapse_empty_random(&self, rng: &mut RfRng) -> ClsDecisionBasicType {
         self.0
             .iter()
             .enumerate()
@@ -23,7 +23,7 @@ impl Votes {
                 best
             })
             .consume()
-            .map(|(_score, class)| class as DecisionBasicType)
+            .map(|(_score, class)| class as ClsDecisionBasicType)
             .unwrap()
     }
 }
@@ -32,7 +32,7 @@ impl VoteAggregator<DataFrame> for Votes {
     fn new(input: &DataFrame) -> Self {
         Votes::new(input.ncat)
     }
-    fn ingest_vote(&mut self, v: DecisionBasicType) {
+    fn ingest_vote(&mut self, v: ClsDecisionBasicType) {
         self.0[v as usize] += 1;
     }
     fn merge(&mut self, other: &Self) {

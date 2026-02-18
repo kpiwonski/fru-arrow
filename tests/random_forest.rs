@@ -1,6 +1,6 @@
-use std::panic;
-
-use minarrow::{Array, BooleanArray, FieldArray, FloatArray, IntegerArray, Table, TextArray};
+use minarrow::{
+    Array, BooleanArray, FieldArray, FloatArray, IntegerArray, RowSelection, Table, TextArray,
+};
 use minarrow::{CategoricalArray, NumericArray};
 use minrf::RandomForest;
 use rand::seq::IndexedRandom;
@@ -196,7 +196,7 @@ fn rf_cls_predict_0_1_interactions() {
     let df = Table::new("table".into(), df_vec.into());
 
     let rf = RandomForest::fit(
-        df.slice(0, 100).to_table(),
+        df.r(0..100).to_table(),
         FieldArray::from_arr("y", Array::from_categorical64(y)),
         1000,
         3,
@@ -207,7 +207,7 @@ fn rf_cls_predict_0_1_interactions() {
         None,
     );
 
-    let oob_pred = rf.predict(df.slice(100, 100).to_table(), 1, None).array;
+    let oob_pred = rf.predict(df.r(100..200).to_table(), 1, None).array;
     assert!(matches!(
         oob_pred,
         Array::TextArray(TextArray::Categorical64(_))
@@ -224,7 +224,7 @@ fn rf_cls_predict_0_1_interactions() {
     assert!(score == 100);
 
     let score = rf
-        .predict_votes(df.slice(100, 100).to_table(), None)
+        .predict_votes(df.r(100..200).to_table(), None)
         .iter()
         .zip(y_ins[100..200].iter())
         .map(|(x, &y)| ((x[1] as f64 / (x[0] + x[1]) as f64 > 0.5) as u64 == y) as u64)
@@ -325,7 +325,7 @@ fn rf_reg_predict_linear() {
     let df = Table::new("table".into(), df_vec.into());
 
     let rf = RandomForest::fit(
-        df.slice(0, 400).to_table(),
+        df.r(0..400).to_table(),
         FieldArray::from_arr("y", Array::from_float64(y)),
         1000,
         1,
@@ -336,7 +336,7 @@ fn rf_reg_predict_linear() {
         None,
     );
 
-    let pred = rf.predict(df.slice(400, 100).to_table(), 1, None).array;
+    let pred = rf.predict(df.r(400..500).to_table(), 1, None).array;
     assert!(matches!(
         pred,
         Array::NumericArray(NumericArray::Float64(_))
@@ -413,7 +413,7 @@ fn rf_reg_predict_votes_should_panic() {
     let df = Table::new("table".into(), df_vec.into());
 
     let rf = RandomForest::fit(
-        df.slice(0, 400).to_table(),
+        df.r(..400).to_table(),
         FieldArray::from_arr("y", Array::from_float64(y)),
         1000,
         1,
@@ -423,7 +423,7 @@ fn rf_reg_predict_votes_should_panic() {
         1,
         None,
     );
-    rf.predict_votes(df.slice(400, 100).to_table(), None);
+    rf.predict_votes(df.r(400..).to_table(), None);
 }
 
 #[test]

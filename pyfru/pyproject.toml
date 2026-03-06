@@ -1,0 +1,25 @@
+[project]
+name = "pyfru"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0.0",
+]
+
+[project.optional-dependencies]
+sklearn = [
+    "scikit-learn>=1.8"
+]
+dev = [
+    "pytest>=9",
+    "pandas>=3"
+]
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+python-source = "python"
+module-name = "pyfru._rust"

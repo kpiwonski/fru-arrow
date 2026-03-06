@@ -1,5 +1,5 @@
 [package]
-name = "minrf"
+name = "fru"
 version = "0.1.0"
 authors = ["Miron B. Kursa <m@mbq.me>"]
 edition="2024"

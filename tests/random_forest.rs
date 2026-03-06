@@ -1,8 +1,8 @@
+use fru::RandomForest;
 use minarrow::{
     Array, BooleanArray, FieldArray, FloatArray, IntegerArray, RowSelection, Table, TextArray,
 };
 use minarrow::{CategoricalArray, NumericArray};
-use minrf::RandomForest;
 use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 const NROW: usize = 100;
@@ -47,10 +47,7 @@ fn rf_cls_check_0_1_3ft() {
     let df_vec = vec![a1, a2, a3];
     let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        FieldArray::from_arr(
-            "y",
-            Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
-        ),
+        Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
         100,
         1,
         false,
@@ -59,7 +56,11 @@ fn rf_cls_check_0_1_3ft() {
         1,
         None,
     );
-    let imp = rf.importance();
+    let imp_table = rf.importance(false);
+
+    let imp = imp_table.cols[imp_table.col_name_index("importance").unwrap()]
+        .array
+        .inner::<FloatArray<f64>>();
 
     assert!(imp[0] > 0.2);
     assert!(imp[1] < 0.01);
@@ -89,10 +90,7 @@ fn rf_cls_importance_0_1_interactions() {
 
     let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        FieldArray::from_arr(
-            "y",
-            Array::from_categorical64(CategoricalArray::from_slices(&y_ins, &unique_values)),
-        ),
+        Array::from_categorical64(CategoricalArray::from_slices(&y_ins, &unique_values)),
         1000,
         10,
         false,
@@ -101,7 +99,11 @@ fn rf_cls_importance_0_1_interactions() {
         1,
         None,
     );
-    let imp = rf.importance_normalised();
+    let imp_table = rf.importance(true);
+
+    let imp = imp_table.cols[imp_table.col_name_index("importance").unwrap()]
+        .array
+        .inner::<FloatArray<f64>>();
 
     assert!(imp[0] > 0.5);
     assert!(imp[1] > 0.5);
@@ -135,7 +137,7 @@ fn rf_cls_oob_0_1_interactions() {
 
     let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        FieldArray::from_arr("y", Array::from_categorical64(y)),
+        Array::from_categorical64(y),
         1000,
         3,
         false,
@@ -145,7 +147,7 @@ fn rf_cls_oob_0_1_interactions() {
         None,
     );
 
-    let oob_pred = rf.oob(1).array;
+    let oob_pred = rf.oob(1);
     assert!(matches!(
         oob_pred,
         Array::TextArray(TextArray::Categorical64(_))
@@ -162,12 +164,17 @@ fn rf_cls_oob_0_1_interactions() {
         .sum::<u64>();
     assert!(score == 100);
 
-    let score = rf
-        .oob_votes()
+    let pred = rf.oob_votes();
+
+    let score = pred.cols[0]
+        .array
+        .inner::<IntegerArray<u64>>()
         .iter()
+        .zip(pred.cols[1].array.inner::<IntegerArray<u64>>().iter())
         .zip(yy.iter())
-        .map(|(x, &y)| ((x[1] as f64 / (x[0] + x[1]) as f64 > 0.5) as u64 == y) as u64)
+        .map(|((&x1, &x2), &y)| ((x2 as f64 / (x1 + x2) as f64 > 0.5) as u64 == y) as u64)
         .sum::<u64>();
+
     assert!(score == 100);
 }
 
@@ -197,7 +204,7 @@ fn rf_cls_predict_0_1_interactions() {
 
     let rf = RandomForest::fit(
         df.r(0..100).to_table(),
-        FieldArray::from_arr("y", Array::from_categorical64(y)),
+        Array::from_categorical64(y),
         1000,
         3,
         true,
@@ -207,7 +214,7 @@ fn rf_cls_predict_0_1_interactions() {
         None,
     );
 
-    let oob_pred = rf.predict(df.r(100..200).to_table(), 1, None).array;
+    let oob_pred = rf.predict(df.r(100..200).to_table(), 1, None);
     assert!(matches!(
         oob_pred,
         Array::TextArray(TextArray::Categorical64(_))
@@ -223,12 +230,17 @@ fn rf_cls_predict_0_1_interactions() {
         .sum::<u64>();
     assert!(score == 100);
 
-    let score = rf
-        .predict_votes(df.r(100..200).to_table(), None)
+    let pred = rf.predict_votes(df.r(100..200).to_table(), None);
+
+    let score = pred.cols[0]
+        .array
+        .inner::<IntegerArray<u64>>()
         .iter()
+        .zip(pred.cols[1].array.inner::<IntegerArray<u64>>().iter())
         .zip(y_ins[100..200].iter())
-        .map(|(x, &y)| ((x[1] as f64 / (x[0] + x[1]) as f64 > 0.5) as u64 == y) as u64)
+        .map(|((&x1, &x2), &y)| ((x2 as f64 / (x1 + x2) as f64 > 0.5) as u64 == y) as u64)
         .sum::<u64>();
+
     assert!(score == 100);
 }
 
@@ -264,10 +276,7 @@ fn rf_cls_check_0_1_4ft_mixed_dtypes() {
     ];
     let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        FieldArray::from_arr(
-            "y",
-            Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
-        ),
+        Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
         100,
         1,
         false,
@@ -276,7 +285,11 @@ fn rf_cls_check_0_1_4ft_mixed_dtypes() {
         1,
         None,
     );
-    let imp = rf.importance();
+    let imp_table = rf.importance(false);
+
+    let imp = imp_table.cols[imp_table.col_name_index("importance").unwrap()]
+        .array
+        .inner::<FloatArray<f64>>();
 
     assert!(imp[0] > 0.2);
     assert!(imp[1] < 0.05);
@@ -297,7 +310,7 @@ fn rf_reg_check_0_1_3ft() {
     let df_vec = vec![a1, a2, a3];
     let rf = RandomForest::fit(
         Table::new("table".into(), df_vec.into()),
-        FieldArray::from_arr("y", Array::from_float64(FloatArray::from_slice(&y))),
+        Array::from_float64(FloatArray::from_slice(&y)),
         100,
         1,
         false,
@@ -306,7 +319,11 @@ fn rf_reg_check_0_1_3ft() {
         1,
         None,
     );
-    let imp = rf.importance();
+    let imp_table = rf.importance(false);
+
+    let imp = imp_table.cols[imp_table.col_name_index("importance").unwrap()]
+        .array
+        .inner::<FloatArray<f64>>();
 
     assert!(imp[0] > 1000.);
     assert!(imp[1] < 100.);
@@ -326,7 +343,7 @@ fn rf_reg_predict_linear() {
 
     let rf = RandomForest::fit(
         df.r(0..400).to_table(),
-        FieldArray::from_arr("y", Array::from_float64(y)),
+        Array::from_float64(y),
         1000,
         1,
         true,
@@ -336,7 +353,7 @@ fn rf_reg_predict_linear() {
         None,
     );
 
-    let pred = rf.predict(df.r(400..500).to_table(), 1, None).array;
+    let pred = rf.predict(df.r(400..500).to_table(), 1, None);
     assert!(matches!(
         pred,
         Array::NumericArray(NumericArray::Float64(_))
@@ -368,7 +385,7 @@ fn rf_reg_oob_linear() {
 
     let rf = RandomForest::fit(
         df,
-        FieldArray::from_arr("y", Array::from_float64(y)),
+        Array::from_float64(y),
         1000,
         1,
         false,
@@ -378,7 +395,7 @@ fn rf_reg_oob_linear() {
         None,
     );
 
-    let oob_pred = rf.oob(1).array;
+    let oob_pred = rf.oob(1);
 
     assert!(matches!(
         oob_pred,
@@ -414,7 +431,7 @@ fn rf_reg_predict_votes_should_panic() {
 
     let rf = RandomForest::fit(
         df.r(..400).to_table(),
-        FieldArray::from_arr("y", Array::from_float64(y)),
+        Array::from_float64(y),
         1000,
         1,
         true,
@@ -442,7 +459,7 @@ fn rf_reg_oob_votes_should_panic() {
 
     let rf = RandomForest::fit(
         df,
-        FieldArray::from_arr("y", Array::from_float64(y)),
+        Array::from_float64(y),
         1000,
         1,
         true,

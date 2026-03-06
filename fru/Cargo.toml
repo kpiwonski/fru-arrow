@@ -1,0 +1,13 @@
+[package]
+name = "fru"
+version = "0.1.0"
+authors = ["Miron B. Kursa <m@mbq.me>"]
+edition="2024"
+
+[dependencies]
+xrf = {version="0.1.3"}
+minarrow = {version="0.8.2", features=["extended_numeric_types", "extended_categorical"]}
+
+[dev-dependencies]
+rand = "0.9"
+minarrow = {version="0.8.2", features=["extended_numeric_types", "extended_categorical", "views"]}

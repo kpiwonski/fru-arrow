@@ -65,10 +65,7 @@ class ResultArray:
         return self
 
     def _array_to_numpy(self):
-        if pa.types.is_dictionary(self.obj.type):
-            return self.obj.indices.to_numpy(zero_copy_only=False)
-        else:
-            return self.obj.to_numpy(zero_copy_only=False)
+        return self.obj.to_numpy(zero_copy_only=False)
 
 
 class RandomForestBase(RfMultiOutputMixin, RfBase):

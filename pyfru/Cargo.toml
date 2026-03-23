@@ -13,3 +13,7 @@ minarrow-pyo3 = "0.2.0"
 pyo3 = { version = "0.23", features = ["abi3-py38"] }
 fru = {path="../fru"} 
 minarrow = "0.8.2"
+
+[profile.release]
+codegen-units = 1
+lto = "fat"

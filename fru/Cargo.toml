@@ -11,3 +11,7 @@ minarrow = {version="0.8.2", features=["extended_numeric_types", "extended_categ
 [dev-dependencies]
 rand = "0.9"
 minarrow = {version="0.8.2", features=["extended_numeric_types", "extended_categorical", "views"]}
+
+[profile.release]
+codegen-units = 1
+lto = "fat"

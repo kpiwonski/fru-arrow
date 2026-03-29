@@ -42,6 +42,28 @@ class ResultTable:
         return np.column_stack(cols)
 
 
+class ImportanceResultTable:
+    IMPORTANCE_COL = "importance"
+    
+    def __init__(self, obj, to_pycapsule):
+        if not hasattr(obj, "__arrow_c_stream__"):
+            raise AttributeError("Object does not have arrow stream PyCapsule")
+        
+        self.obj = obj
+        self.to_pycapsule = to_pycapsule
+
+    def __arrow_c_stream__(self, requested_schema=None):
+        return self.obj.__arrow_c_stream__()
+
+    def get_array(self):
+        if not self.to_pycapsule:
+            return self._df_to_numpy()
+        return self
+
+    def _df_to_numpy(self):
+        return self.obj[self.IMPORTANCE_COL]
+
+
 class ResultArray:
     def __init__(self, obj, to_pycapsule):
         if not hasattr(obj, "__arrow_c_array__"):
@@ -84,14 +106,14 @@ class RandomForestBase(RfMultiOutputMixin, RfBase):
         X = self._validate_x(X)
         preds = self.forest.predict(X, self._get_seed(), self.n_jobs)
         return ResultArray(preds, to_pycapsule=self.to_pycapsule).get_array()
-        
+
     def oob(self):
         oob = self.forest.oob(self._get_seed())
         return ResultArray(oob, to_pycapsule=self.to_pycapsule).get_array()
 
     def importance(self):
         importance = self.forest.importance(self.importance_normalised)
-        return ResultTable(importance, to_pycapsule=self.to_pycapsule).get_df()
+        return ImportanceResultTable(importance, to_pycapsule=self.to_pycapsule).get_array()
 
     def _get_seed(self):
         return self.random_state if self.random_state is not None else secrets.randbits(64)
@@ -123,7 +145,6 @@ class RandomForestClassifier(RandomForestBase, RfClassifierMixin):
         votes = self.forest.predict_votes(X, self.n_jobs)
         return ResultTable(votes, to_pycapsule=self.to_pycapsule).get_df()
 
-    @property
     def oob_votes(self):
         votes = self.forest.oob_votes()
         return ResultTable(votes, to_pycapsule=self.to_pycapsule).get_df()

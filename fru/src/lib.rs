@@ -8,6 +8,7 @@ mod attribute;
 mod classification;
 use classification::DataFrame as DataFrameClassification;
 mod regression;
+pub mod tools;
 
 use crate::{classification::ClsDecisionBasicType, regression::DataFrameRegression};
 

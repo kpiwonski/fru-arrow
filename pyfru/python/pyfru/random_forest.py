@@ -61,7 +61,7 @@ class ImportanceResultTable:
         return self
 
     def _df_to_numpy(self):
-        return self.obj[self.IMPORTANCE_COL]
+        return self.obj[self.IMPORTANCE_COL].to_numpy(zero_copy_only=False)
 
 
 class ResultArray:
@@ -126,11 +126,8 @@ class RandomForestBase(RfMultiOutputMixin, RfBase):
     
     @staticmethod
     def _validate_y(y):
-        if hasattr(y, "to_frame"):
-            y = y.to_frame()
         if not hasattr(y, "__arrow_c_stream__"):
             raise AttributeError("y must implement PyCapsule")
-
         return y
 
 

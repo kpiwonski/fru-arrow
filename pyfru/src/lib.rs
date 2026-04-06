@@ -16,7 +16,7 @@ mod pyfru {
         #[pyo3(signature = (df, y, trees, tries, save_forest, importance, oob, seed, classifier, threads=None))]
         fn fit(
             df: PyRecordBatch,
-            y: PyRecordBatch,
+            y: PyArray,
             trees: usize,
             tries: Option<usize>,
             save_forest: bool,
@@ -29,7 +29,7 @@ mod pyfru {
             let df = df.into_inner();
             let tries = tries.unwrap_or((df.n_cols() as f64).sqrt().round() as usize);
             if classifier {
-                if let Array::TextArray(arr) = y.into_inner().cols[0].array.clone() {
+                if let Array::TextArray(arr) = y.into_inner().array.clone() {
                     let y_array = match arr {
                         TextArray::Categorical8(x) => Into::<CategoricalArray<u64>>::into(&*x),
                         TextArray::Categorical16(x) => Into::<CategoricalArray<u64>>::into(&*x),
@@ -53,7 +53,7 @@ mod pyfru {
                     unreachable!("Decision is not categorical")
                 }
             } else {
-                if let Array::NumericArray(arr) = y.into_inner().cols[0].array.clone() {
+                if let Array::NumericArray(arr) = y.into_inner().array.clone() {
                     let y_array = match arr {
                         NumericArray::Int8(x) => Into::<FloatArray<f64>>::into(&*x),
                         NumericArray::Int16(x) => Into::<FloatArray<f64>>::into(&*x),

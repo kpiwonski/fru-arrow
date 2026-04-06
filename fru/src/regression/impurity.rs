@@ -4,6 +4,7 @@ use super::DecisionSlice;
 use super::VarAggregator;
 use crate::attribute::DfPivot;
 use crate::regression::RegDecisionBasicType;
+use crate::tools::MidpointThreshold;
 use minarrow::BooleanArray;
 use xrf::{Mask, RfRng};
 
@@ -26,7 +27,7 @@ pub fn scan_bin(x: &BooleanArray<()>, ys: &DecisionSlice, mask: &Mask) -> Option
     Some((DfPivot::Logical, score))
 }
 
-pub fn scan_categorical<T: Copy + Ord + TryInto<usize> + Into<DfPivot>>(
+pub fn scan_categorical<T: Copy + Ord + TryInto<usize> + Into<DfPivot> + MidpointThreshold>(
     x: &[T],
     xc: usize,
     ys: &DecisionSlice,
@@ -109,7 +110,7 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
     ans
 }
 
-pub fn scan_integer<T: Copy + Ord + Into<DfPivot>>(
+pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
     x: &[T],
     ys: &DecisionSlice,
     mask: &Mask,
@@ -132,7 +133,7 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot>>(
             if x.cmp(&next_x).is_ne() {
                 let score: f64 = -(left.var_n() + right.var_n());
                 if score > acc.map(|x| x.1).unwrap_or(f64::NEG_INFINITY) {
-                    return Some((x, score));
+                    return Some((x.midpoint_threshold(next_x), score));
                 }
             }
             acc

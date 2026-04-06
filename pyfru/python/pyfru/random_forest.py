@@ -1,3 +1,4 @@
+import sys
 import secrets
 import numpy as np
 import pyarrow as pa
@@ -117,11 +118,21 @@ class RandomForestBase(RfMultiOutputMixin, RfBase):
 
     def _get_seed(self):
         return self.random_state if self.random_state is not None else secrets.randbits(64)
-   
+
     @staticmethod
-    def _validate_x(X):
+    def _remove_pandas_rownames(obj):
+        pd = sys.modules.get("pandas")
+    
+        # Remove pandas rownames, otherwise would be passed as __index_level_0__ to arrow
+        if pd and isinstance(obj, pd.DataFrame):
+            return obj.reset_index(drop=True)
+        return obj
+   
+    @classmethod
+    def _validate_x(cls, X):
         if not hasattr(X, "__arrow_c_stream__"):
             raise AttributeError("X must implement PyCapsule")
+        X = cls._remove_pandas_rownames(X)
         return X
     
     @staticmethod

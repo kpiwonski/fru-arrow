@@ -68,9 +68,9 @@ def test_rf_cls_0_1_3ft_oob(table_0_1_3ft):
     X, y = table_0_1_3ft
     rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None)
     rf.fit(X, y)
-    assert sum(y.cat.codes.to_numpy() == rf.oob())/len(y) > 0.95
+    assert sum(y.to_numpy() == rf.oob())/len(y) > 0.95
 
-    votes = rf.oob_votes
+    votes = rf.oob_votes()
     assert sum((votes[:,0] < votes[:,1]) == y.cat.codes.to_numpy()) > 0.95
     
 def test_rf_cls_0_1_3ft_predict(table_0_1_3ft): 
@@ -84,7 +84,7 @@ def test_rf_cls_0_1_3ft_predict(table_0_1_3ft):
     rf.fit(X_train, y_train)
     y_pred = rf.predict(X_test)
 
-    assert sum(y_test.cat.codes.to_numpy() == y_pred)/len(y_test) > 0.95
+    assert sum(y_test.to_numpy() == y_pred)/len(y_test) > 0.95
   
     votes = rf.predict_proba(X_test)
     assert sum((votes[:,0] < votes[:,1]) == y_test.cat.codes.to_numpy()) > 0.95
@@ -137,6 +137,6 @@ def test_rf_res_to_pandas(table_0_1_3ft):
     assert len(pd.Series.from_arrow(rf.oob())) == 400
     assert pd.DataFrame.from_arrow(rf.importance()).shape[0] == 3
     assert pd.DataFrame.from_arrow(rf.predict_proba(X_test)).shape == (100, 2)
-    assert pd.DataFrame.from_arrow(rf.oob_votes).shape == (400, 2)
+    assert pd.DataFrame.from_arrow(rf.oob_votes()).shape == (400, 2)
     
         

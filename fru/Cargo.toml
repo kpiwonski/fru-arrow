@@ -6,11 +6,11 @@ edition="2024"
 
 [dependencies]
 xrf = {version="0.1.4"}
-minarrow = {version="0.9.3", features=["extended_numeric_types", "extended_categorical"]}
+minarrow = {version="0.10.1", features=["extended_numeric_types", "extended_categorical"]}
 
 [dev-dependencies]
 rand = "0.9"
-minarrow = {version="0.9.3", features=["extended_numeric_types", "extended_categorical", "views"]}
+minarrow = {version="0.10.1", features=["extended_numeric_types", "extended_categorical", "views"]}
 
 [profile.release]
 codegen-units = 1

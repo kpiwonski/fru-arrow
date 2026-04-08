@@ -67,9 +67,9 @@ dependencies = [
 
 [[package]]
 name = "minarrow"
-version = "0.9.3"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6df4285616ae8458fe19678f3c0b53159d883ef19f98ecea8c968271a84798a"
+checksum = "fefef9032f782049845b549c4aac57699546551e99da0fa6ffb46e2f61226b56"
 dependencies = [
  "libc",
  "num-traits",
@@ -78,7 +78,9 @@ dependencies = [
 
 [[package]]
 name = "minarrow-pyo3"
-version = "0.2.0"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f5303bb73abcc9530d07db0cfbf283e40110760d96611086f073aedbf066375"
 dependencies = [
  "minarrow",
  "pyo3",

@@ -9,10 +9,10 @@ name = "pyfru"
 crate-type = ["cdylib"]
 
 [dependencies]
-minarrow-pyo3 = "0.2.0"
+minarrow-pyo3 = "0.2.1"
 pyo3 = { version = "0.23", features = ["abi3-py38"] }
 fru = {path="../fru"} 
-minarrow = "0.9.3"
+minarrow = "0.10.1"
 
 [profile.release]
 codegen-units = 1

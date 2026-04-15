@@ -3,9 +3,10 @@ use std::marker::PhantomData;
 use minarrow::{
     Array, BooleanArray, CategoricalArray, FloatArray, IntegerArray, NumericArray, TextArray,
 };
+use serde::{Deserialize, Serialize};
 use xrf::{FeatureSampler, RfInput, RfRng};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum DfPivot {
     Logical,
     Real(f64),

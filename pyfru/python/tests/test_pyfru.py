@@ -1,3 +1,4 @@
+import pickle
 import pytest
 import numpy as np
 import pandas as pd
@@ -88,6 +89,84 @@ def test_rf_cls_0_1_3ft_predict(table_0_1_3ft):
   
     votes = rf.predict_proba(X_test)
     assert sum((votes[:,0] < votes[:,1]) == y_test.cat.codes.to_numpy()) > 0.95
+
+def test_rf_cls_0_1_3ft_predict_pickle_roundtrip(table_0_1_3ft, tmp_path): 
+    X, y = table_0_1_3ft
+    X_train = X.iloc[:400,:]
+    X_test = X.iloc[400:,:]
+    y_train = y[:400]
+    y_test = y[400:]
+
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, random_state=None)
+    rf.fit(X_train, y_train)
+
+    y_pred = rf.predict(X_test)
+    np.testing.assert_array_equal(y_pred, y_test)
+    votes = rf.predict_proba(X_test)
+    oob_votes = rf.oob_votes()
+    importance = rf.importance()
+
+    model_path = tmp_path / "model.pkl"
+    with open(model_path, "wb") as f:
+        pickle.dump(rf, f)
+
+    with open(model_path, "rb") as f:
+        loaded_rf = pickle.load(f)
+
+    y_loaded_pred = loaded_rf.predict(X_test)
+    np.testing.assert_array_equal(y_pred, y_loaded_pred)
+    loaded_votes = loaded_rf.predict_proba(X_test)
+    loaded_oob_votes = loaded_rf.oob_votes()
+    np.testing.assert_array_equal(oob_votes, loaded_oob_votes)
+    loaded_importance = loaded_rf.importance()
+    np.testing.assert_array_equal(importance, loaded_importance)
+    
+    np.testing.assert_array_equal(votes, loaded_votes)
+
+
+def test_rf_cls_0_1_3ft_predict_pickle_roundtrip_without_importance_and_oob(table_0_1_3ft, tmp_path): 
+    X, y = table_0_1_3ft
+    X_train = X.iloc[:400,:]
+    X_test = X.iloc[400:,:]
+    y_train = y[:400]
+    y_test = y[400:]
+
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=False, calculate_importance=False, random_state=None)
+    rf.fit(X_train, y_train)
+
+    y_pred = rf.predict(X_test)
+    np.testing.assert_array_equal(y_pred, y_test)
+    votes = rf.predict_proba(X_test)
+    oob_votes = rf.oob_votes()
+    importance = rf.importance()
+
+    model_path = tmp_path / "model.pkl"
+    with open(model_path, "wb") as f:
+        pickle.dump(rf, f)
+
+    with open(model_path, "rb") as f:
+        loaded_rf = pickle.load(f)
+
+    y_loaded_pred = loaded_rf.predict(X_test)
+    np.testing.assert_array_equal(y_pred, y_loaded_pred)
+    loaded_votes = loaded_rf.predict_proba(X_test)
+    loaded_oob_votes = loaded_rf.oob_votes()
+    np.testing.assert_array_equal(oob_votes, loaded_oob_votes)
+    loaded_importance = loaded_rf.importance()
+    np.testing.assert_array_equal(importance, loaded_importance)
+    
+    np.testing.assert_array_equal(votes, loaded_votes)
+
+def test_rf_cls_0_1_3ft_pickle_without_save_forest(table_0_1_3ft, tmp_path): 
+    X, y = table_0_1_3ft
+
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, save_forest=False, random_state=None)
+    rf.fit(X, y)
+
+    model_path = tmp_path / "model.pkl"
+    with open(model_path, "wb") as f:
+        with pytest.raises(ValueError, match="Cannot serialize model, when forest is not saved"):
+            pickle.dump(rf, f)
 
 
 def test_rf_reg_importance(table_uniform_3ft):

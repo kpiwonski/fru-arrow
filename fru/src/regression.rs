@@ -9,12 +9,12 @@ use votes::Votes;
 
 pub type RegDecisionBasicType = f64;
 
-pub struct DataFrameRegression {
+pub struct DataFrame {
     features: Table,
     decision: FloatArray<RegDecisionBasicType>,
 }
 
-impl RfInput for DataFrameRegression {
+impl RfInput for DataFrame {
     type FeatureId = usize;
     type FeatureSampler = FYSampler<Self>;
     type DecisionSlice = DecisionSlice;
@@ -114,7 +114,7 @@ impl xrf::DecisionSlice<RegDecisionBasicType> for DecisionSlice {
     }
 }
 
-impl DataFrameRegression {
+impl DataFrame {
     pub fn new(features: Table, decision: FloatArray<RegDecisionBasicType>) -> Self {
         Self { features, decision }
     }

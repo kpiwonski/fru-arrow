@@ -5,7 +5,7 @@ authors = ["Miron B. Kursa <m@mbq.me>"]
 edition="2024"
 
 [dependencies]
-xrf = {version="0.1.4"}
+xrf = {version="0.1.5"}
 minarrow = {version="0.10.1", features=["extended_numeric_types", "extended_categorical"]}
 
 [dev-dependencies]

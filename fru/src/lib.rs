@@ -1,16 +1,24 @@
 use minarrow::{
     Array, CategoricalArray, FieldArray, FloatArray, IntegerArray, NumericArray, Table, TextArray,
 };
-use xrf::{Forest, ImportanceAggregator, Prediction, RfRng};
+use thiserror::Error;
+use xrf::{Forest, ImportanceAggregator, Prediction, RfRng, Walk};
 
 mod attribute;
 
 mod classification;
+mod serialize;
 use classification::DataFrame as DataFrameClassification;
+use regression::DataFrame as DataFrameRegression;
 mod regression;
 pub mod tools;
 
-use crate::{classification::ClsDecisionBasicType, regression::DataFrameRegression};
+use classification::ClsDecisionBasicType;
+
+use crate::serialize::{
+    SerializedForest, SerializedForestClassificationV1, SerializedForestRegressionV1,
+    WalkClassification, WalkRegression,
+};
 
 pub struct RandomForestRegressor {
     forest: Forest<DataFrameRegression>,
@@ -288,6 +296,118 @@ impl RandomForest {
         )
     }
 
+    pub fn serialize(&self) -> Result<SerializedForest, FruError> {
+        match self {
+            RandomForest::Classifier(rfc) => {
+                if !rfc.forest.has_trees() {
+                    Err(FruError::NoForestSerializeEror)?
+                }
+                let nodes = rfc
+                    .forest
+                    .walk()
+                    .map(|walk| Into::<WalkClassification>::into(walk))
+                    .collect();
+                let oob = rfc.forest.oob().map(|(_, v)| v.clone()).collect();
+                let importance: Vec<_> = rfc
+                    .forest
+                    .raw_importance()
+                    .map(|(id, agg)| (id, agg.into_raw()))
+                    .collect();
+                Ok(SerializedForest::V1Classification(
+                    SerializedForestClassificationV1::new(
+                        nodes,
+                        rfc.decision_unique_values.clone(),
+                        rfc.ncol,
+                        rfc.train_nrow,
+                        oob,
+                        importance,
+                    ),
+                ))
+            }
+            RandomForest::Regressor(rfr) => {
+                if !rfr.forest.has_trees() {
+                    Err(FruError::NoForestSerializeEror)?
+                }
+
+                let nodes = rfr
+                    .forest
+                    .walk()
+                    .map(|walk| Into::<WalkRegression>::into(walk))
+                    .collect();
+                let oob = rfr.forest.oob().map(|(_, v)| v.clone()).collect();
+                let importance: Vec<_> = rfr
+                    .forest
+                    .raw_importance()
+                    .map(|(id, agg)| (id, agg.into_raw()))
+                    .collect();
+
+                Ok(SerializedForest::V1Regression(
+                    SerializedForestRegressionV1::new(
+                        nodes,
+                        rfr.ncol,
+                        rfr.train_nrow.clone(),
+                        oob,
+                        importance,
+                    ),
+                ))
+            }
+        }
+    }
+
+    pub fn deserialize(serialized_forest: SerializedForest) -> Self {
+        match serialized_forest {
+            SerializedForest::V1Classification(sfc) => {
+                let nodes = sfc
+                    .nodes
+                    .iter()
+                    .map(|node| Into::<Walk<DataFrameClassification>>::into(node));
+                let mut forest = Forest::from_walk(nodes).unwrap();
+                forest.replace_oob(sfc.oob.into_iter());
+                let importance = sfc
+                    .importance_raw
+                    .iter()
+                    .map(|(id, imp_raw)| (*id, ImportanceAggregator::from_raw(imp_raw)));
+                forest.replace_importance(importance);
+
+                RandomForest::Classifier(RandomForestClassifier {
+                    forest: forest,
+                    decision_unique_values: sfc.decision_unique_values,
+                    ncol: sfc.ncol,
+                    train_nrow: sfc.train_nrow,
+                })
+            }
+            SerializedForest::V1Regression(sfr) => {
+                let nodes = sfr
+                    .nodes
+                    .iter()
+                    .map(|node| Into::<Walk<DataFrameRegression>>::into(node));
+                let mut forest = Forest::from_walk(nodes).unwrap();
+                forest.replace_oob(sfr.oob.into_iter());
+
+                let importance = sfr
+                    .importance_raw
+                    .iter()
+                    .map(|(id, imp_raw)| (*id, ImportanceAggregator::from_raw(imp_raw)));
+                forest.replace_importance(importance);
+
+                RandomForest::Regressor(RandomForestRegressor {
+                    forest: forest,
+                    ncol: sfr.ncol,
+                    train_nrow: sfr.train_nrow,
+                })
+            }
+        }
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, FruError> {
+        Ok(postcard::to_allocvec(&self.serialize()?)?)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, FruError> {
+        let serialized_forest: SerializedForest = postcard::from_bytes(bytes)?;
+        Ok(Self::deserialize(serialized_forest))
+    }
+
     pub fn trees(&self) -> usize {
         map_either!(self, rf =>  rf.forest.trees())
     }
@@ -321,4 +441,12 @@ impl RandomForest {
                 .unwrap_or(1)
         })
     }
+}
+
+#[derive(Error, Debug)]
+pub enum FruError {
+    #[error("Cannot serialize model, when forest is not saved")]
+    NoForestSerializeEror,
+    #[error("Postcard error while converting model to/from bytes: {0}")]
+    PostcardError(#[from] postcard::Error),
 }

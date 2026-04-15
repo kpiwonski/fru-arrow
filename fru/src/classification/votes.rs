@@ -1,9 +1,10 @@
 use crate::classification::ClsDecisionBasicType;
 
 use super::DataFrame;
+use serde::{Deserialize, Serialize};
 use xrf::{FairBest, RfRng, VoteAggregator};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Votes(pub Vec<usize>); //TODO: Fix impurity to make it private
 
 impl Votes {

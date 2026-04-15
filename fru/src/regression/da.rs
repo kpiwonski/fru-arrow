@@ -1,6 +1,5 @@
-use crate::regression::RegDecisionBasicType;
+use crate::regression::{DataFrame, RegDecisionBasicType};
 
-use super::DataFrameRegression;
 use minarrow::FloatArray;
 use std::collections::HashMap;
 use xrf::{AccuracyDecreaseAggregator, Mask, RfInput};
@@ -11,8 +10,8 @@ pub struct DaAggregator {
     n: usize,
     true_decision: FloatArray<RegDecisionBasicType>,
 }
-impl AccuracyDecreaseAggregator<DataFrameRegression> for DaAggregator {
-    fn new(input: &DataFrameRegression, on: &Mask, n: usize) -> Self {
+impl AccuracyDecreaseAggregator<DataFrame> for DaAggregator {
+    fn new(input: &DataFrame, on: &Mask, n: usize) -> Self {
         Self {
             direct: vec![None; n],
             drops: HashMap::new(),
@@ -41,7 +40,7 @@ impl AccuracyDecreaseAggregator<DataFrameRegression> for DaAggregator {
     fn get_direct_vote(&self, e: usize) -> RegDecisionBasicType {
         self.direct.get(e).unwrap().unwrap()
     }
-    fn mda_iter(&self) -> impl Iterator<Item = (<DataFrameRegression as RfInput>::FeatureId, f64)> {
+    fn mda_iter(&self) -> impl Iterator<Item = (<DataFrame as RfInput>::FeatureId, f64)> {
         self.drops
             .iter()
             .map(|(a, b)| (*a, (*b as f64) / (self.n as f64)))

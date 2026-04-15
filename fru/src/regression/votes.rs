@@ -1,9 +1,9 @@
-use crate::regression::RegDecisionBasicType;
+use crate::regression::{DataFrame, RegDecisionBasicType};
 
-use super::DataFrameRegression;
+use serde::{Deserialize, Serialize};
 use xrf::VoteAggregator;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Votes {
     sum: f64,
     n: usize,
@@ -23,8 +23,8 @@ impl Votes {
     }
 }
 
-impl VoteAggregator<DataFrameRegression> for Votes {
-    fn new(_input: &DataFrameRegression) -> Self {
+impl VoteAggregator<DataFrame> for Votes {
+    fn new(_input: &DataFrame) -> Self {
         Votes::new()
     }
     fn ingest_vote(&mut self, v: RegDecisionBasicType) {

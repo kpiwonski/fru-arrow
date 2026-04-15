@@ -5,7 +5,7 @@ use pyo3::prelude::*;
 mod pyfru {
     use minarrow::{Array, CategoricalArray, FloatArray, NumericArray, TextArray};
     use minarrow_pyo3::{PyArray, PyRecordBatch};
-    use pyo3::prelude::*;
+    use pyo3::{prelude::*, types::PyBytes};
 
     #[pyclass]
     struct RandomForest(fru::RandomForest);
@@ -105,6 +105,24 @@ mod pyfru {
 
         fn oob_votes(&self) -> PyRecordBatch {
             self.0.oob_votes().into()
+        }
+
+        fn to_bytes(&self, py: Python<'_>) -> PyResult<Py<PyBytes>> {
+            Ok(PyBytes::new(
+                py,
+                &self
+                    .0
+                    .to_bytes()
+                    .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{e}")))?,
+            )
+            .into())
+        }
+
+        #[staticmethod]
+        fn from_bytes(bytes: &[u8]) -> PyResult<Self> {
+            Ok(Self(fru::RandomForest::from_bytes(bytes).map_err(|e| {
+                PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{e}"))
+            })?))
         }
     }
 }

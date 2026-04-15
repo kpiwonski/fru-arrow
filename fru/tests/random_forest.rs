@@ -470,3 +470,49 @@ fn rf_reg_oob_votes_should_panic() {
     );
     rf.oob_votes();
 }
+
+#[test]
+fn rf_cls_predict_0_1_interactions_serialize_round_trip() {
+    let nrow = 200;
+    let mut rng = StdRng::seed_from_u64(1);
+    let x1 = sample_0_1(&mut rng, nrow);
+    let x2 = sample_0_1(&mut rng, nrow);
+
+    let y_ins: Vec<_> = x1
+        .iter()
+        .zip(x2.iter())
+        .map(|row| (*row.0 == 1 && *row.1 == 1) as u64)
+        .collect();
+
+    let mut df_vec = vec![new_arr_i64("x1", x1), new_arr_i64("x2", x2)];
+    for i in 1..10 {
+        df_vec.push(new_arr_i64(
+            &format!("rand{}", i),
+            sample_0_1(&mut rng, nrow),
+        ));
+    }
+    let unique_values = vec![String::from("false"), String::from("true")];
+    let y = CategoricalArray::from_slices(&y_ins[0..100], &unique_values);
+    let df = Table::new("table".into(), df_vec.into());
+
+    let rf = RandomForest::fit(
+        df.r(0..100).to_table(),
+        Array::from_categorical64(y),
+        1000,
+        3,
+        true,
+        false,
+        false,
+        1,
+        None,
+    );
+
+    let pred = rf.predict_votes_raw(df.r(100..200).to_table(), None);
+    let rf_bytes = rf.to_bytes().unwrap();
+    let deserialized_forest = RandomForest::from_bytes(&rf_bytes).unwrap();
+    let pred_deserialized_forest =
+        deserialized_forest.predict_votes_raw(df.r(100..200).to_table(), None);
+    pred.predictions()
+        .zip(pred_deserialized_forest.predictions())
+        .for_each(|(x, y)| assert_eq!(x.0, y.0));
+}

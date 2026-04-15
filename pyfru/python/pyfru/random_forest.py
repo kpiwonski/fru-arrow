@@ -102,6 +102,21 @@ class RandomForestBase(RfMultiOutputMixin, RfBase):
         self.n_jobs = n_jobs
         self.importance_normalised = importance_normalised
         self.to_pycapsule = to_pycapsule
+        self.forest = None
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        if self.forest is not None:
+            state["forest_bytes"] = self.forest.to_bytes()
+            del state["forest"]
+        return state
+    
+    def __setstate__(self, state):
+        if "forest_bytes" in state:
+            forest = _rust.RandomForest.from_bytes(state["forest_bytes"])
+            self.forest = forest
+            del state["forest_bytes"]        
+        self.__dict__.update(state)
                 
     def predict(self, X):
         X = self._validate_x(X)

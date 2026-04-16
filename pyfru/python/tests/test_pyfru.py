@@ -10,7 +10,8 @@ def table_0_1_3ft():
     # Generate random 0s and 1s
     num_rows = 500
     num_cols = 3
-    data = {f"col{i+1}": np.random.randint(0, 2, size=num_rows) for i in range(num_cols)}
+    rng = np.random.default_rng(seed=42)
+    data = {f"col{i+1}": rng.integers(0, 2, size=num_rows) for i in range(num_cols)}
 
     df = pd.DataFrame(data)
     y = pd.Categorical(df.iloc[:,0], categories=[0, 1], ordered=False)
@@ -47,7 +48,7 @@ def table_uniform_3ft():
 
 def test_rf_cls_0_1_3ft_imp(table_0_1_3ft): 
     X, y = table_0_1_3ft
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_importance=True, importance_normalised=False, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_importance=True, importance_normalised=False, random_state=1)
     rf.fit(X, y)
     imp = rf.importance()
     assert imp[0] > 0.1
@@ -57,7 +58,7 @@ def test_rf_cls_0_1_3ft_imp(table_0_1_3ft):
 
 def test_rf_cls_0_1_3ft_tries_none_imp(table_0_1_10ft): 
     X, y = table_0_1_10ft
-    rf = pyfru.RandomForestClassifier(100, None, calculate_importance=True, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, None, calculate_importance=True, random_state=1)
     rf.fit(X, y)
     imp = rf.importance()
     assert imp[0] > 0.1
@@ -67,7 +68,7 @@ def test_rf_cls_0_1_3ft_tries_none_imp(table_0_1_10ft):
     
 def test_rf_cls_0_1_3ft_oob(table_0_1_3ft): 
     X, y = table_0_1_3ft
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=1)
     rf.fit(X, y)
     assert sum(y.to_numpy() == rf.oob())/len(y) > 0.95
 
@@ -81,7 +82,7 @@ def test_rf_cls_0_1_3ft_predict(table_0_1_3ft):
     y_train = y[:400]
     y_test = y[400:]
 
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=1)
     rf.fit(X_train, y_train)
     y_pred = rf.predict(X_test)
 
@@ -97,7 +98,7 @@ def test_rf_cls_0_1_3ft_predict_pickle_roundtrip(table_0_1_3ft, tmp_path):
     y_train = y[:400]
     y_test = y[400:]
 
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, random_state=1)
     rf.fit(X_train, y_train)
 
     y_pred = rf.predict(X_test)
@@ -131,7 +132,7 @@ def test_rf_cls_0_1_3ft_predict_pickle_roundtrip_without_importance_and_oob(tabl
     y_train = y[:400]
     y_test = y[400:]
 
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=False, calculate_importance=False, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=False, calculate_importance=False, random_state=1)
     rf.fit(X_train, y_train)
 
     y_pred = rf.predict(X_test)
@@ -160,7 +161,7 @@ def test_rf_cls_0_1_3ft_predict_pickle_roundtrip_without_importance_and_oob(tabl
 def test_rf_cls_0_1_3ft_pickle_without_save_forest(table_0_1_3ft, tmp_path): 
     X, y = table_0_1_3ft
 
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, save_forest=False, random_state=None)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, save_forest=False, random_state=1)
     rf.fit(X, y)
 
     model_path = tmp_path / "model.pkl"
@@ -171,7 +172,7 @@ def test_rf_cls_0_1_3ft_pickle_without_save_forest(table_0_1_3ft, tmp_path):
 
 def test_rf_reg_importance(table_uniform_3ft):
     X, y = table_uniform_3ft
-    rf = pyfru.RandomForestRegressor(100, 1, calculate_importance=True, importance_normalised=False, random_state=None)
+    rf = pyfru.RandomForestRegressor(100, 1, calculate_importance=True, importance_normalised=False, random_state=1)
     rf.fit(X, y)
     imp = rf.importance()
     assert imp[0] > 0.1
@@ -182,7 +183,7 @@ def test_rf_reg_importance(table_uniform_3ft):
 def test_rf_reg_oob(table_uniform_3ft):
     X, y = table_uniform_3ft
    
-    rf = pyfru.RandomForestRegressor(100, 1, calculate_oob=True, random_state=None)
+    rf = pyfru.RandomForestRegressor(100, 1, calculate_oob=True, random_state=1)
     rf.fit(X, y)
     y_oob = rf.oob()
     assert sum((y_oob-y).abs())/len(y) < 0.05
@@ -196,7 +197,7 @@ def test_rf_reg_predict(table_uniform_3ft):
     y_train = y[:400]
     y_test = y[400:]
     
-    rf = pyfru.RandomForestRegressor(100, 1, random_state=None)
+    rf = pyfru.RandomForestRegressor(100, 1, random_state=1)
     rf.fit(X_train, y_train)
     y_pred = rf.predict(X_test)
     assert sum((y_pred-y_test).abs())/len(y_pred) < 0.05
@@ -208,7 +209,7 @@ def test_rf_res_to_pandas(table_0_1_3ft):
     X_test = X.iloc[400:,:]
     y_train = y[:400]
 
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None, to_pycapsule=True)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=1, to_pycapsule=True)
     rf.fit(X_train, y_train)
     y_pred = rf.predict(X_test)
 

@@ -55,6 +55,19 @@ def test_rf_cls_0_1_3ft_imp(table_0_1_3ft):
     assert imp[1] < 0.01
     assert imp[2] < 0.01
 
+def test_rf_cls_0_1_3ft_imp_pycapsule(table_0_1_3ft): 
+    X, y = table_0_1_3ft
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_importance=True, importance_normalised=False, random_state=None, to_pycapsule=True)
+    rf.fit(X, y)
+    imp = rf.importance()
+    imp_df = pd.DataFrame.from_arrow(imp)
+    assert list(imp_df.columns) == ["column", "importance"]
+    assert list(imp_df["column"]) == ["col1", "col2", "col3"]
+    assert imp_df["importance"][0] > 0.1
+    assert imp_df["importance"][1] < 0.01
+    assert imp_df["importance"][2] < 0.01
+
+
 
 def test_rf_cls_0_1_3ft_tries_none_imp(table_0_1_10ft): 
     X, y = table_0_1_10ft
@@ -90,6 +103,78 @@ def test_rf_cls_0_1_3ft_predict(table_0_1_3ft):
   
     votes = rf.predict_proba(X_test)
     assert sum((votes[:,0] < votes[:,1]) == y_test.cat.codes.to_numpy()) > 0.95
+
+
+def test_rf_cls_0_1_3ft_predict_validates_column_names(table_0_1_3ft, tmp_path): 
+    X, y = table_0_1_3ft
+    X_train = X.iloc[:400,:]
+    X_test = X.iloc[400:,:]
+    X_test.columns = ["col_1", "col_2", "XXX"]
+    y_train = y[:400]
+    
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None)
+    rf.fit(X_train, y_train)
+    with pytest.raises(BaseException, match="Column names do not match"):
+        rf.predict(X_test)
+  
+    with pytest.raises(BaseException, match="Column names do not match"):
+        rf.predict_proba(X_test)
+
+        
+    model_path = tmp_path / "model_validate_columns.pkl"
+    with open(model_path, "wb") as f:
+        pickle.dump(rf, f)
+
+    with open(model_path, "rb") as f:
+        loaded_rf = pickle.load(f)
+
+    
+    with pytest.raises(BaseException, match="Column names do not match"):
+        loaded_rf.predict(X_test)
+  
+    with pytest.raises(BaseException, match="Column names do not match"):
+        loaded_rf.predict_proba(X_test)
+
+
+def test_rf_cls_0_1_3ft_predict_validates_dtypes(table_0_1_3ft): 
+    X, y = table_0_1_3ft
+    X_train = X.iloc[:400,:]
+    X_test = X.iloc[400:,:]
+    print(X_test.dtypes)
+    X_test["col1"] = X_test["col1"].astype(float)
+    y_train = y[:400]
+    
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None)
+    rf.fit(X_train, y_train)
+    with pytest.raises(BaseException, match="Column types do not match"):
+        rf.predict(X_test)
+  
+    with pytest.raises(BaseException, match="Column types do not match"):
+        rf.predict_proba(X_test)
+
+
+def test_rf_cls_predict_validates_categorical_unique_values(): 
+    x1 = ['A', 'B', 'C', 'A', 'B', 'C', 'A', 'B', 'C', 'A']
+    x2 = ['X', 'Y', 'Z', 'X', 'Y', 'Z', 'X', 'Y', 'Z', 'X']
+    df = pd.DataFrame({'col1': x1, 'col2': x2}, dtype="category")
+
+    y = pd.Series(
+        ['A', 'B', 'C', 'A', 'B', 'C', 'A', 'B', 'C', 'A'],
+        dtype='category'
+    )
+
+    x1 = df["col1"]
+    x2 = df["col2"]
+    df_predict = pd.DataFrame({"col1": x2, "col2": x1}, dtype="category")
+    
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=None)
+    rf.fit(df, y)
+    with pytest.raises(BaseException, match="Categorical features unique values do not match"):
+        rf.predict(df_predict)
+  
+    with pytest.raises(BaseException, match="Categorical features unique values do not match"):
+        rf.predict_proba(df_predict)
+
 
 def test_rf_cls_0_1_3ft_predict_pickle_roundtrip(table_0_1_3ft, tmp_path): 
     X, y = table_0_1_3ft
@@ -138,8 +223,6 @@ def test_rf_cls_0_1_3ft_predict_pickle_roundtrip_without_importance_and_oob(tabl
     y_pred = rf.predict(X_test)
     np.testing.assert_array_equal(y_pred, y_test)
     votes = rf.predict_proba(X_test)
-    oob_votes = rf.oob_votes()
-    importance = rf.importance()
 
     model_path = tmp_path / "model.pkl"
     with open(model_path, "wb") as f:
@@ -151,11 +234,6 @@ def test_rf_cls_0_1_3ft_predict_pickle_roundtrip_without_importance_and_oob(tabl
     y_loaded_pred = loaded_rf.predict(X_test)
     np.testing.assert_array_equal(y_pred, y_loaded_pred)
     loaded_votes = loaded_rf.predict_proba(X_test)
-    loaded_oob_votes = loaded_rf.oob_votes()
-    np.testing.assert_array_equal(oob_votes, loaded_oob_votes)
-    loaded_importance = loaded_rf.importance()
-    np.testing.assert_array_equal(importance, loaded_importance)
-    
     np.testing.assert_array_equal(votes, loaded_votes)
 
 def test_rf_cls_0_1_3ft_pickle_without_save_forest(table_0_1_3ft, tmp_path): 
@@ -209,7 +287,7 @@ def test_rf_res_to_pandas(table_0_1_3ft):
     X_test = X.iloc[400:,:]
     y_train = y[:400]
 
-    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, random_state=1, to_pycapsule=True)
+    rf = pyfru.RandomForestClassifier(100, 1, calculate_oob=True, calculate_importance=True, random_state=None, to_pycapsule=True)
     rf.fit(X_train, y_train)
     y_pred = rf.predict(X_test)
 

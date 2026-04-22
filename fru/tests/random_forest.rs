@@ -214,7 +214,7 @@ fn rf_cls_predict_0_1_interactions() {
         None,
     );
 
-    let oob_pred = rf.predict(df.r(100..200).to_table(), 1, None);
+    let oob_pred = rf.predict(df.r(100..200).to_table(), 1, true, None);
     assert!(matches!(
         oob_pred,
         Array::TextArray(TextArray::Categorical64(_))
@@ -230,7 +230,7 @@ fn rf_cls_predict_0_1_interactions() {
         .sum::<u64>();
     assert!(score == 100);
 
-    let pred = rf.predict_votes(df.r(100..200).to_table(), None);
+    let pred = rf.predict_votes(df.r(100..200).to_table(), true, None);
 
     let score = pred.cols[0]
         .array
@@ -353,7 +353,7 @@ fn rf_reg_predict_linear() {
         None,
     );
 
-    let pred = rf.predict(df.r(400..500).to_table(), 1, None);
+    let pred = rf.predict(df.r(400..500).to_table(), 1, true, None);
     assert!(matches!(
         pred,
         Array::NumericArray(NumericArray::Float64(_))
@@ -426,7 +426,7 @@ fn rf_reg_predict_votes_should_panic() {
     let x1: Vec<f64> = (0..nrow).map(|_| rng.random_range(0.0..10.0)).collect();
     let y_ins = x1.clone();
     let df_vec = vec![new_arr_f64("x1", x1)];
-    let y = FloatArray::from_slice(&y_ins);
+    let y = FloatArray::from_slice(&y_ins[..400]);
     let df = Table::new("table".into(), df_vec.into());
 
     let rf = RandomForest::fit(
@@ -440,7 +440,7 @@ fn rf_reg_predict_votes_should_panic() {
         1,
         None,
     );
-    rf.predict_votes(df.r(400..).to_table(), None);
+    rf.predict_votes(df.r(400..).to_table(), true, None);
 }
 
 #[test]
@@ -507,11 +507,11 @@ fn rf_cls_predict_0_1_interactions_serialize_round_trip() {
         None,
     );
 
-    let pred = rf.predict_votes_raw(df.r(100..200).to_table(), None);
+    let pred = rf.predict_votes_raw(df.r(100..200).to_table(), true, None);
     let rf_bytes = rf.to_bytes().unwrap();
     let deserialized_forest = RandomForest::from_bytes(&rf_bytes).unwrap();
     let pred_deserialized_forest =
-        deserialized_forest.predict_votes_raw(df.r(100..200).to_table(), None);
+        deserialized_forest.predict_votes_raw(df.r(100..200).to_table(), true, None);
     pred.predictions()
         .zip(pred_deserialized_forest.predictions())
         .for_each(|(x, y)| assert_eq!(x.0, y.0));

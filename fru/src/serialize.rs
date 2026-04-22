@@ -1,3 +1,4 @@
+use minarrow::{Array, FieldArray, NumericArray, Table, TextArray};
 use serde::{Deserialize, Serialize};
 use xrf::{RfInput, Walk};
 
@@ -20,6 +21,9 @@ pub struct SerializedForestClassificationV1 {
     pub train_nrow: usize,
     pub oob: Vec<<DataFrameClassification as RfInput>::VoteAggregator>,
     pub importance_raw: Vec<ImportanceRaw>,
+    pub col_names: Vec<String>,
+    pub col_dtypes: Vec<ArrayDType>,
+    pub categorical_unique_values: CategoricalUniqueValues,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,6 +33,9 @@ pub struct SerializedForestRegressionV1 {
     pub train_nrow: usize,
     pub oob: Vec<<DataFrameRegression as RfInput>::VoteAggregator>,
     pub importance_raw: Vec<ImportanceRaw>,
+    pub col_names: Vec<String>,
+    pub col_dtypes: Vec<ArrayDType>,
+    pub categorical_unique_values: CategoricalUniqueValues,
 }
 
 impl SerializedForestClassificationV1 {
@@ -39,6 +46,9 @@ impl SerializedForestClassificationV1 {
         train_nrow: usize,
         oob: Vec<<DataFrameClassification as RfInput>::VoteAggregator>,
         importance_raw: Vec<ImportanceRaw>,
+        col_names: Vec<String>,
+        col_dtypes: Vec<ArrayDType>,
+        categorical_unique_values: CategoricalUniqueValues,
     ) -> Self {
         SerializedForestClassificationV1 {
             nodes,
@@ -47,6 +57,9 @@ impl SerializedForestClassificationV1 {
             train_nrow,
             oob,
             importance_raw,
+            col_names,
+            col_dtypes,
+            categorical_unique_values,
         }
     }
 }
@@ -58,6 +71,9 @@ impl SerializedForestRegressionV1 {
         train_nrow: usize,
         oob: Vec<<DataFrameRegression as RfInput>::VoteAggregator>,
         importance_raw: Vec<ImportanceRaw>,
+        col_names: Vec<String>,
+        col_dtypes: Vec<ArrayDType>,
+        categorical_unique_values: CategoricalUniqueValues,
     ) -> Self {
         SerializedForestRegressionV1 {
             nodes,
@@ -65,6 +81,9 @@ impl SerializedForestRegressionV1 {
             train_nrow,
             oob,
             importance_raw,
+            col_names,
+            col_dtypes,
+            categorical_unique_values,
         }
     }
 }
@@ -129,6 +148,74 @@ impl From<&WalkRegression> for Walk<DataFrameRegression> {
             WalkRegression::VisitBranch(feature_id, pivot) => {
                 Walk::VisitBranch(*feature_id, pivot.clone())
             }
+        }
+    }
+}
+
+pub type CategoricalUniqueValues = Vec<Option<Vec<String>>>;
+
+pub fn get_categorical_features_unique_values(x: &Table) -> CategoricalUniqueValues {
+    let mut res = vec![];
+    for feature in x.cols() {
+        let new_res = match &feature.array {
+            Array::TextArray(arr) => match arr {
+                TextArray::Categorical8(x) => Some(x.unique_values.to_vec()),
+                TextArray::Categorical16(x) => Some(x.unique_values.to_vec()),
+                TextArray::Categorical32(x) => Some(x.unique_values.to_vec()),
+                TextArray::Categorical64(x) => Some(x.unique_values.to_vec()),
+                _ => None,
+            },
+            _ => None,
+        };
+        res.push(new_res);
+    }
+    res
+}
+
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum ArrayDType {
+    Boolean,
+    Float32,
+    Float64,
+    Integer8,
+    Integer16,
+    Integer32,
+    Integer64,
+    UInteger8,
+    UInteger16,
+    UInteger32,
+    UInteger64,
+    Categorical8,
+    Categorical16,
+    Categorical32,
+    Categorical64,
+}
+
+impl ArrayDType {
+    pub fn from_field_array(field: &FieldArray) -> Self {
+        match &field.array {
+            Array::NumericArray(num) => match num {
+                NumericArray::Float32(_) => Self::Float32,
+                NumericArray::Float64(_) => Self::Float64,
+                NumericArray::UInt8(_) => Self::UInteger8,
+                NumericArray::UInt16(_) => Self::UInteger16,
+                NumericArray::UInt32(_) => Self::UInteger32,
+                NumericArray::UInt64(_) => Self::UInteger64,
+                NumericArray::Int8(_) => Self::Integer8,
+                NumericArray::Int16(_) => Self::Integer16,
+                NumericArray::Int32(_) => Self::Integer32,
+                NumericArray::Int64(_) => Self::Integer64,
+                _ => panic!("Unsupported data type!"),
+            },
+            Array::TextArray(arr) => match arr {
+                TextArray::Categorical8(_) => Self::Categorical8,
+                TextArray::Categorical16(_) => Self::Categorical16,
+                TextArray::Categorical32(_) => Self::Categorical32,
+                TextArray::Categorical64(_) => Self::Categorical64,
+                _ => panic!("Unsupported data type!"),
+            },
+            Array::BooleanArray(_) => Self::Boolean,
+            _ => panic!("Unsupported data type!"),
         }
     }
 }

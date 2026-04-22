@@ -50,9 +50,9 @@ class RandomForestBase(RfMultiOutputMixin, RfBase):
             del state["forest_bytes"]        
         self.__dict__.update(state)
                 
-    def predict(self, X):
+    def predict(self, X, validate_input=True):
         X = self._validate_x(X)
-        preds = self.forest.predict(X, self._get_seed(), self.n_jobs)
+        preds = self.forest.predict(X, self._get_seed(), validate_input, self.n_jobs)
         return ResultArray(preds, to_pycapsule=self.to_pycapsule).get_array()
 
     def oob(self):
@@ -95,9 +95,9 @@ class RandomForestClassifier(RandomForestBase, RfClassifierMixin):
         X = self._validate_x(X)
         self.forest = _rust.RandomForest(X, y, self.n_estimators, self.tries, self.save_forest, self.calculate_importance, self.calculate_oob, self._get_seed(), True, self.n_jobs)
 
-    def predict_proba(self, X):
+    def predict_proba(self, X, validate_input=True):
         X = self._validate_x(X)
-        votes = self.forest.predict_votes(X, self.n_jobs)
+        votes = self.forest.predict_votes(X, validate_input, self.n_jobs)
         return ResultTable(votes, to_pycapsule=self.to_pycapsule).get_df()
 
     def oob_votes(self):

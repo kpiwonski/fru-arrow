@@ -1,5 +1,6 @@
 use minarrow::{
-    Array, CategoricalArray, FieldArray, FloatArray, IntegerArray, NumericArray, Table, TextArray,
+    Array, CategoricalArray, FieldArray, FloatArray, IntegerArray, NumericArray, StringArray,
+    Table, TextArray,
 };
 use thiserror::Error;
 use xrf::{Forest, ImportanceAggregator, Prediction, RfRng, Walk};
@@ -16,14 +17,18 @@ pub mod tools;
 use classification::ClsDecisionBasicType;
 
 use crate::serialize::{
-    SerializedForest, SerializedForestClassificationV1, SerializedForestRegressionV1,
-    WalkClassification, WalkRegression,
+    ArrayDType, CategoricalUniqueValues, SerializedForest, SerializedForestClassificationV1,
+    SerializedForestRegressionV1, WalkClassification, WalkRegression,
+    get_categorical_features_unique_values,
 };
 
 pub struct RandomForestRegressor {
     forest: Forest<DataFrameRegression>,
     ncol: usize,
     train_nrow: usize,
+    col_names: Vec<String>,
+    col_dtypes: Vec<ArrayDType>,
+    categorical_unique_values: CategoricalUniqueValues,
 }
 
 pub struct RandomForestClassifier {
@@ -31,6 +36,9 @@ pub struct RandomForestClassifier {
     decision_unique_values: Vec<String>,
     ncol: usize,
     train_nrow: usize,
+    col_names: Vec<String>,
+    col_dtypes: Vec<ArrayDType>,
+    categorical_unique_values: CategoricalUniqueValues,
 }
 
 pub enum RandomForest {
@@ -49,7 +57,12 @@ macro_rules! map_either {
 
 impl RandomForest {
     pub fn importance_raw(&self, normalised: bool) -> Vec<(usize, f64)> {
-        // TODO check if has importance
+        map_either!(self, rf => {
+            if !rf.forest.has_importance() {
+                panic!("Importance was not calculated for the forest")
+            }
+        });
+
         let trees = self.trees();
         let f = |(feature, value): (usize, &ImportanceAggregator)| {
             if normalised {
@@ -70,14 +83,28 @@ impl RandomForest {
             imp[i] = val;
         }
 
+        let col_names = map_either!(
+            self, rf => FieldArray::from_arr(
+                "column",
+                Array::from_string64(
+                    StringArray::from_vec(rf.col_names.iter().map(|x| x.as_str()).collect::<Vec<_>>(), None)
+                )
+            )
+        );
         let imp_arr = FieldArray::from_arr(
             "importance",
             Array::from_float64(FloatArray::from_slice(&imp)),
         );
-        Table::new("importance".into(), vec![imp_arr].into())
+        Table::new("importance".into(), vec![col_names, imp_arr].into())
     }
 
     pub fn oob(&self, seed: u64) -> Array {
+        map_either!(self, rf => {
+            if !rf.forest.has_oob() {
+                panic!("OOB was not calculated for the forest")
+            }
+        });
+
         match self {
             RandomForest::Classifier(rf) => {
                 let mut rng = RfRng::from_seed(seed, 1);
@@ -106,12 +133,18 @@ impl RandomForest {
 
     pub fn oob_votes_raw(&self) -> impl Iterator<Item = (usize, usize, usize)> {
         match self {
-            RandomForest::Classifier(rf) => rf.forest.oob().flat_map(|(e, v)| {
-                v.0.clone()
-                    .into_iter()
-                    .enumerate()
-                    .map(move |(i, x)| (e, i, x))
-            }),
+            RandomForest::Classifier(rf) => {
+                if !rf.forest.has_oob() {
+                    panic!("OOB was not calculated for the forest")
+                }
+
+                rf.forest.oob().flat_map(|(e, v)| {
+                    v.0.clone()
+                        .into_iter()
+                        .enumerate()
+                        .map(move |(i, x)| (e, i, x))
+                })
+            }
             RandomForest::Regressor(_) => unreachable!("Votes for regression are not supported"),
         }
     }
@@ -154,8 +187,35 @@ impl RandomForest {
         seed: u64,
         threads: Option<usize>,
     ) -> Self {
+        if trees == 0 {
+            panic!("Trees parameter must be greater than 0")
+        }
+
+        if tries == 0 {
+            panic!("Tries parameter must be greater than 0")
+        }
+
+        if tries > x.n_cols() {
+            panic!("Tries cannot be greater than ncol")
+        }
+
+        if x.n_rows() == 0 {
+            panic!("Data frame cannot be empty")
+        }
+
+        if x.n_rows() != y.len() {
+            panic!("Decision length must be equal number of data frame rows")
+        }
+
+        let categorical_unique_values = get_categorical_features_unique_values(&x);
         let ncol = x.n_cols();
         let train_nrow = x.n_rows();
+        let col_names: Vec<_> = x.col_names().iter().map(|x| x.to_string()).collect();
+        let col_dtypes: Vec<_> = x
+            .cols
+            .iter()
+            .map(|col| ArrayDType::from_field_array(col))
+            .collect();
         if let Array::NumericArray(NumericArray::Float64(y)) = y {
             let df = DataFrameRegression::new(x, (*y).clone());
 
@@ -173,6 +233,9 @@ impl RandomForest {
                 forest,
                 ncol,
                 train_nrow,
+                col_names,
+                col_dtypes,
+                categorical_unique_values,
             });
         }
         if let Array::TextArray(TextArray::Categorical64(y)) = y {
@@ -197,13 +260,59 @@ impl RandomForest {
                 decision_unique_values,
                 ncol,
                 train_nrow,
+                col_names,
+                col_dtypes,
+                categorical_unique_values,
             });
         }
 
         panic!("Unsupported decision type");
     }
 
-    pub fn predict(&self, x: Table, seed: u64, threads: Option<usize>) -> Array {
+    fn validate_x(&self, x: Table) -> Table {
+        map_either!(self, rf => {
+            x.schema()
+                .iter()
+                .zip(rf.col_names.iter())
+                .for_each(|(field, reference_name)| {
+                    if &field.name != reference_name {
+                        panic!("Column names do not match")
+                    }
+                });
+            x.cols
+                .iter()
+                .zip(rf.col_dtypes.iter())
+                .for_each(|(field, reference_dtype)| {
+                    if &ArrayDType::from_field_array(field) != reference_dtype {
+                        panic!("Column types do not match")
+                    }
+                });
+            let categorical_unique_values = get_categorical_features_unique_values(&x);
+            categorical_unique_values.iter()
+                .zip(rf.categorical_unique_values.iter())
+                .for_each(|(val, ref_val)| {
+                    if val != ref_val {
+                        panic!("Categorical features unique values do not match")
+                    }
+                }
+            );
+            x
+        })
+    }
+
+    pub fn predict(
+        &self,
+        x: Table,
+        seed: u64,
+        validate_input: bool,
+        threads: Option<usize>,
+    ) -> Array {
+        let x = if validate_input {
+            self.validate_x(x)
+        } else {
+            x
+        };
+
         match self {
             RandomForest::Classifier(rf) => {
                 let mut rng = RfRng::from_seed(seed, 1);
@@ -244,8 +353,15 @@ impl RandomForest {
     pub fn predict_votes_raw(
         &self,
         x: Table,
+        validate_input: bool,
         threads: Option<usize>,
     ) -> Prediction<DataFrameClassification> {
+        let x = if validate_input {
+            self.validate_x(x)
+        } else {
+            x
+        };
+
         match self {
             RandomForest::Classifier(rf) => {
                 let df = DataFrameClassification::new(
@@ -260,10 +376,10 @@ impl RandomForest {
         }
     }
 
-    pub fn predict_votes(&self, x: Table, threads: Option<usize>) -> Table {
+    pub fn predict_votes(&self, x: Table, validate_input: bool, threads: Option<usize>) -> Table {
         let nrows = x.n_rows();
         let votes: Vec<_> = self
-            .predict_votes_raw(x, threads)
+            .predict_votes_raw(x, validate_input, threads)
             .predictions()
             .flat_map(|(e, v)| {
                 v.0.clone()
@@ -321,6 +437,9 @@ impl RandomForest {
                         rfc.train_nrow,
                         oob,
                         importance,
+                        rfc.col_names.clone(),
+                        rfc.col_dtypes.clone(),
+                        rfc.categorical_unique_values.clone(),
                     ),
                 ))
             }
@@ -348,6 +467,9 @@ impl RandomForest {
                         rfr.train_nrow.clone(),
                         oob,
                         importance,
+                        rfr.col_names.clone(),
+                        rfr.col_dtypes.clone(),
+                        rfr.categorical_unique_values.clone(),
                     ),
                 ))
             }
@@ -374,6 +496,9 @@ impl RandomForest {
                     decision_unique_values: sfc.decision_unique_values,
                     ncol: sfc.ncol,
                     train_nrow: sfc.train_nrow,
+                    col_names: sfc.col_names,
+                    col_dtypes: sfc.col_dtypes,
+                    categorical_unique_values: sfc.categorical_unique_values,
                 })
             }
             SerializedForest::V1Regression(sfr) => {
@@ -394,6 +519,9 @@ impl RandomForest {
                     forest: forest,
                     ncol: sfr.ncol,
                     train_nrow: sfr.train_nrow,
+                    col_names: sfr.col_names,
+                    col_dtypes: sfr.col_dtypes,
+                    categorical_unique_values: sfr.categorical_unique_values,
                 })
             }
         }
@@ -435,11 +563,16 @@ impl RandomForest {
     }
 
     fn get_threads(threads: Option<usize>) -> usize {
-        threads.unwrap_or_else(|| {
+        if let Some(val) = threads {
+            if val == 0 {
+                panic!("Number of threads have to greater than 0")
+            }
+            val
+        } else {
             std::thread::available_parallelism()
                 .map(|n| n.get())
                 .unwrap_or(1)
-        })
+        }
     }
 }
 

@@ -89,18 +89,33 @@ mod pyfru {
             self.0.importance(normalised).into()
         }
 
-        #[pyo3(signature = (x, seed, threads=None))]
-        fn predict(&self, x: PyRecordBatch, seed: u64, threads: Option<usize>) -> PyArray {
-            self.0.predict(x.into_inner(), seed, threads).into()
+        #[pyo3(signature = (x, seed, validate_input, threads=None))]
+        fn predict(
+            &self,
+            x: PyRecordBatch,
+            seed: u64,
+            validate_input: bool,
+            threads: Option<usize>,
+        ) -> PyArray {
+            self.0
+                .predict(x.into_inner(), seed, validate_input, threads)
+                .into()
         }
 
         fn oob(&self, seed: u64) -> PyArray {
             self.0.oob(seed).into()
         }
 
-        #[pyo3(signature = (x, threads=None))]
-        fn predict_votes(&self, x: PyRecordBatch, threads: Option<usize>) -> PyRecordBatch {
-            self.0.predict_votes(x.into(), threads).into()
+        #[pyo3(signature = (x, validate_input, threads=None))]
+        fn predict_votes(
+            &self,
+            x: PyRecordBatch,
+            validate_input: bool,
+            threads: Option<usize>,
+        ) -> PyRecordBatch {
+            self.0
+                .predict_votes(x.into(), validate_input, threads)
+                .into()
         }
 
         fn oob_votes(&self) -> PyRecordBatch {

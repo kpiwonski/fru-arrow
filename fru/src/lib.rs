@@ -50,15 +50,11 @@ pub struct RandomForestClassifier {
 
 /// The main structure for the Random Forest model.
 ///
-/// The Random Forest classifier selects the best feature at each split using
-/// Gini impurity. For numerical features, the threshold is optimized by an
+/// The Random Forest Classifier selects the best feature at each split using
+/// Gini impurity. The Random Forest Regressor selects the best feature at each split using
+/// variance reduction. For numerical features, the threshold is optimized by an
 /// exhaustive scan and chosen as the midpoint between adjacent values. In case
 /// of ties, the smaller threshold is selected.
-///
-/// The Random Forest Regressor selects the best feature at each split using
-/// variance reduction. For numerical features, the threshold is optimized by
-/// an exhaustive scan. The threshold is the midpoint between
-/// adjacent values. In case of ties, the smaller threshold is chosen.
 ///
 /// Ordered categorical variables are currently treated as categorical. Variables
 /// with six or more levels are treated as integers. Variables with five or fewer

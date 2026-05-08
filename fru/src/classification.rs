@@ -43,7 +43,7 @@ impl RfInput for DataFrame {
         y: &Self::DecisionSlice,
         rng: &mut RfRng,
     ) -> Option<(Self::Pivot, f64)> {
-        let feature = &self.features.cols[using as usize];
+        let feature = &self.features.cols[using];
         match &feature.array {
             Array::NumericArray(num) => match num {
                 NumericArray::Float32(x) => impurity::scan_float(x, y, on),
@@ -60,16 +60,16 @@ impl RfInput for DataFrame {
             },
             Array::TextArray(arr) => match arr {
                 TextArray::Categorical8(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 TextArray::Categorical16(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 TextArray::Categorical32(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 TextArray::Categorical64(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 _ => panic!("Unsupported data type!"),
             },

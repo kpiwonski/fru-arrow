@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'pyfru'
-copyright = '2026, Chris Piwonski, Miron Kursa'
-author = 'Chris Piwonski, Miron Kursa'
-release = '0.0.1'
+project = "pyfru"
+copyright = "2026, Chris Piwonski, Miron Kursa"
+author = "Chris Piwonski, Miron Kursa"
+release = "0.0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -17,8 +17,7 @@ release = '0.0.1'
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", "sphinx.ext.napoleon"]
 
 templates_path = []
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------

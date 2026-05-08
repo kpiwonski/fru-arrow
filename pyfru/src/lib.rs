@@ -12,6 +12,7 @@ mod pyfru {
 
     #[pymethods]
     impl RandomForest {
+        #[allow(clippy::too_many_arguments)]
         #[new]
         #[pyo3(signature = (df, y, trees, tries, save_forest, importance, oob, seed, classifier, threads=None))]
         fn fit(
@@ -38,7 +39,7 @@ mod pyfru {
                         _ => unreachable!("Decision is not categorical"),
                     };
 
-                    return RandomForest(fru::RandomForest::fit(
+                    RandomForest(fru::RandomForest::fit(
                         df,
                         y_array.into(),
                         trees,
@@ -48,7 +49,7 @@ mod pyfru {
                         oob,
                         seed,
                         threads,
-                    ));
+                    ))
                 } else {
                     unreachable!("Decision is not categorical")
                 }

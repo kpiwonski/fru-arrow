@@ -56,16 +56,16 @@ impl RfInput for DataFrame {
             },
             Array::TextArray(arr) => match arr {
                 TextArray::Categorical8(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 TextArray::Categorical16(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 TextArray::Categorical32(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 TextArray::Categorical64(x) => {
-                    impurity::scan_categorical(&x, x.unique_values.len(), y, on, rng)
+                    impurity::scan_categorical(x, x.unique_values.len(), y, on, rng)
                 }
                 _ => panic!("Unsupported data type!"),
             },
@@ -79,7 +79,7 @@ impl RfInput for DataFrame {
         using: Self::FeatureId,
         by: &Self::Pivot,
     ) -> impl Iterator<Item = bool> {
-        let feature = &self.features.cols[using as usize];
+        let feature = &self.features.cols[using];
         SplittingIterator::new(&feature.array, by, on.iter())
     }
 

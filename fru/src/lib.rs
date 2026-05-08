@@ -273,6 +273,7 @@ impl RandomForest {
     /// * `seed` - Random seed used by the algorithm.
     /// * `threads` - Number of threads to use. Must be greater than zero.
     ///   If `None`, all available CPU cores are used.
+    #[allow(clippy::too_many_arguments)]
     pub fn fit(
         x: Table,
         y: Array,
@@ -308,11 +309,7 @@ impl RandomForest {
         let ncol = x.n_cols();
         let train_nrow = x.n_rows();
         let col_names: Vec<_> = x.col_names().iter().map(|x| x.to_string()).collect();
-        let col_dtypes: Vec<_> = x
-            .cols
-            .iter()
-            .map(|col| ArrayDType::from_field_array(col))
-            .collect();
+        let col_dtypes: Vec<_> = x.cols.iter().map(ArrayDType::from_field_array).collect();
         if let Array::NumericArray(NumericArray::Float64(y)) = y {
             let df = DataFrameRegression::new(x, (*y).clone());
 
@@ -563,7 +560,7 @@ impl RandomForest {
                 let nodes = rfc
                     .forest
                     .walk()
-                    .map(|walk| Into::<WalkClassification>::into(walk))
+                    .map(Into::<WalkClassification>::into)
                     .collect();
                 let oob = rfc.forest.oob().map(|(_, v)| v.clone()).collect();
                 let importance: Vec<_> = rfc
@@ -593,7 +590,7 @@ impl RandomForest {
                 let nodes = rfr
                     .forest
                     .walk()
-                    .map(|walk| Into::<WalkRegression>::into(walk))
+                    .map(Into::<WalkRegression>::into)
                     .collect();
                 let oob = rfr.forest.oob().map(|(_, v)| v.clone()).collect();
                 let importance: Vec<_> = rfr
@@ -606,7 +603,7 @@ impl RandomForest {
                     SerializedForestRegressionV1::new(
                         nodes,
                         rfr.ncol,
-                        rfr.train_nrow.clone(),
+                        rfr.train_nrow,
                         oob,
                         importance,
                         rfr.col_names.clone(),
@@ -624,7 +621,7 @@ impl RandomForest {
                 let nodes = sfc
                     .nodes
                     .iter()
-                    .map(|node| Into::<Walk<DataFrameClassification>>::into(node));
+                    .map(Into::<Walk<DataFrameClassification>>::into);
                 let mut forest = Forest::from_walk(nodes).unwrap();
                 forest.replace_oob(sfc.oob.into_iter());
                 let importance = sfc
@@ -634,7 +631,7 @@ impl RandomForest {
                 forest.replace_importance(importance);
 
                 RandomForest::Classifier(RandomForestClassifier {
-                    forest: forest,
+                    forest,
                     decision_unique_values: sfc.decision_unique_values,
                     ncol: sfc.ncol,
                     train_nrow: sfc.train_nrow,
@@ -647,7 +644,7 @@ impl RandomForest {
                 let nodes = sfr
                     .nodes
                     .iter()
-                    .map(|node| Into::<Walk<DataFrameRegression>>::into(node));
+                    .map(Into::<Walk<DataFrameRegression>>::into);
                 let mut forest = Forest::from_walk(nodes).unwrap();
                 forest.replace_oob(sfr.oob.into_iter());
 
@@ -658,7 +655,7 @@ impl RandomForest {
                 forest.replace_importance(importance);
 
                 RandomForest::Regressor(RandomForestRegressor {
-                    forest: forest,
+                    forest,
                     ncol: sfr.ncol,
                     train_nrow: sfr.train_nrow,
                     col_names: sfr.col_names,

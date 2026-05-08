@@ -1,3 +1,4 @@
 target/
 __pycache__/
 *.so
+pyfru/python/docs/_build/

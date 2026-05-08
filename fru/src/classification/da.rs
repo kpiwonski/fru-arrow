@@ -29,7 +29,7 @@ impl AccuracyDecreaseAggregator<DataFrame> for ClsDaAggregator {
                     let oob_vote = self.direct.get(e).unwrap().unwrap();
                     if !oob_vote.eq(vote) {
                         let tru = self.true_decision[e];
-                        match (tru.eq(&vote), tru.eq(&oob_vote)) {
+                        match (tru.eq(vote), tru.eq(&oob_vote)) {
                             (true, true) => unreachable!("Logic error"),
                             (true, false) => -1,
                             (false, true) => 1,

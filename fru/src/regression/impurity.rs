@@ -13,7 +13,7 @@ pub fn scan_bin(x: &BooleanArray<()>, ys: &DecisionSlice, mask: &Mask) -> Option
     let mut left = VarAggregator::new();
     let mut right = VarAggregator::new();
     mask.iter()
-        .map(|&e| x[e] != false)
+        .map(|&e| x[e])
         .zip(ys.values.iter())
         .for_each(|(x, &y)| {
             if x {
@@ -41,7 +41,7 @@ pub fn scan_categorical<T: Copy + Ord + TryInto<usize> + Into<DfPivot> + Midpoin
     if xc < 2 {
         return None;
     }
-    let mut va: Vec<VarAggregator> = std::iter::repeat_with(|| VarAggregator::new())
+    let mut va: Vec<VarAggregator> = std::iter::repeat_with(VarAggregator::new)
         .take(xc)
         .collect();
     mask.iter()
@@ -92,7 +92,8 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
 
     let mut left = VarAggregator::new();
     let mut right = ys.summary.clone();
-    let ans = bound
+    
+    bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
         .fold(None, |acc: Option<(f64, f64)>, (x, next_x, y)| {
@@ -106,8 +107,7 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
             }
             acc
         })
-        .map(|(thresh, score)| (DfPivot::Real(thresh), score));
-    ans
+        .map(|(thresh, score)| (DfPivot::Real(thresh), score))
 }
 
 pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
@@ -120,11 +120,12 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
         .collect();
-    bound.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    bound.sort_unstable_by_key(|a| a.0);
 
     let mut left = VarAggregator::new();
     let mut right = ys.summary.clone();
-    let ans = bound
+    
+    bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
         .fold(None, |acc: Option<(T, f64)>, (x, next_x, y)| {
@@ -138,6 +139,5 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
             }
             acc
         })
-        .map(|(thresh, score)| (thresh.into(), score));
-    ans
+        .map(|(thresh, score)| (thresh.into(), score))
 }

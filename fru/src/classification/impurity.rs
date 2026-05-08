@@ -10,7 +10,7 @@ pub fn scan_bin(x: &BooleanArray<()>, ys: &DecisionSlice, mask: &Mask) -> Option
     let mut xt = 0_usize;
     let n = mask.len();
     mask.iter()
-        .map(|&e| x[e] != false)
+        .map(|&e| x[e])
         .zip(ys.values.iter())
         .for_each(|(x, &y)| {
             if x {
@@ -51,7 +51,7 @@ pub fn scan_categorical<T: Copy + Ord + TryInto<usize> + Into<DfPivot> + Midpoin
     }
     let n = mask.len();
     let mut va: Vec<Votes> = std::iter::repeat_with(|| Votes::new(ys.ncat))
-        .take(xc as usize)
+        .take(xc)
         .collect();
     mask.iter()
         .map(|&e| x[e])
@@ -109,7 +109,8 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
     let n = bound.len();
     let mut left = Votes::new(ys.ncat);
     let mut scanned = 0_usize;
-    let ans = bound
+    
+    bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
         .fold(None, |acc: Option<(f64, f64)>, (x, next_x, y)| {
@@ -136,8 +137,7 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
             }
             acc
         })
-        .map(|(thresh, score)| (DfPivot::Real(thresh), score));
-    ans
+        .map(|(thresh, score)| (DfPivot::Real(thresh), score))
 }
 
 pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
@@ -150,12 +150,13 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
         .zip(ys.values.iter())
         .map(|(&xe, &y)| (x[xe], y))
         .collect();
-    bound.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    bound.sort_unstable_by_key(|a| a.0);
 
     let n = bound.len();
     let mut left = Votes::new(ys.ncat);
     let mut scanned = 0_usize;
-    let ans = bound
+    
+    bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
         .fold(None, |acc: Option<(T, f64)>, (x, next_x, y)| {
@@ -182,6 +183,5 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
             }
             acc
         })
-        .map(|(thresh, score)| (thresh.into(), score));
-    ans
+        .map(|(thresh, score)| (thresh.into(), score))
 }

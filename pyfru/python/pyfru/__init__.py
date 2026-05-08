@@ -1,2 +1,3 @@
-from pyfru.random_forest import RandomForestClassifier
-from pyfru.random_forest import RandomForestRegressor
+from pyfru.random_forest import RandomForestClassifier, RandomForestRegressor
+
+__all__ = ["RandomForestClassifier", "RandomForestRegressor"]

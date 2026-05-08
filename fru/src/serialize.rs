@@ -39,6 +39,7 @@ pub struct SerializedForestRegressionV1 {
 }
 
 impl SerializedForestClassificationV1 {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         nodes: Vec<WalkClassification>,
         decision_unique_values: Vec<String>,
@@ -65,6 +66,7 @@ impl SerializedForestClassificationV1 {
 }
 
 impl SerializedForestRegressionV1 {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         nodes: Vec<WalkRegression>,
         ncol: usize,

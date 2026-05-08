@@ -107,7 +107,7 @@ where
     fn next(&mut self) -> Option<bool> {
         if let Some(&e) = self.mask_iter.next() {
             let ans = match self.pair {
-                DfSplittingPair::Boolean(x) => x[e] != false,
+                DfSplittingPair::Boolean(x) => x[e],
                 DfSplittingPair::Float32(x, xt) => x[e] as f64 > xt,
                 DfSplittingPair::Float64(x, xt) => x[e] > xt,
                 DfSplittingPair::Integer8(x, xt) => x[e] as i64 > xt,

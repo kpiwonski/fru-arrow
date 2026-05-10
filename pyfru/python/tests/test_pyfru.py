@@ -143,7 +143,6 @@ def test_rf_cls_0_1_3ft_predict_validates_dtypes(table_0_1_3ft):
     X, y = table_0_1_3ft
     X_train = X.iloc[:400, :]
     X_test = X.iloc[400:, :]
-    print(X_test.dtypes)
     X_test["col1"] = X_test["col1"].astype(float)
     y_train = y[:400]
 
@@ -178,6 +177,43 @@ def test_rf_cls_predict_validates_categorical_unique_values():
         BaseException, match="Categorical features unique values do not match"
     ):
         rf.predict(df_predict, votes=True)
+
+
+def test_rf_cls_0_1_3ft_fit_validates_x_nan(table_0_1_3ft):
+    X, y = table_0_1_3ft
+    X.iloc[0, 0] = np.nan
+
+    rf = pyfru.RandomForestClassifier(100, 1, seed=1)
+    with pytest.raises(BaseException, match="NA values are not supported"):
+        rf.fit(X, y)
+
+
+def test_rf_cls_0_1_3ft_fit_validates_y_nan(table_0_1_3ft):
+    X, _ = table_0_1_3ft
+    y = X["col1"]
+    y[0] = np.nan
+
+    rf = pyfru.RandomForestRegressor(100, 1, seed=1)
+    with pytest.raises(BaseException, match="NA values are not supported"):
+        rf.fit(X, y)
+
+
+def test_rf_cls_0_1_3ft_predict_validates_x_nan(table_0_1_3ft):
+    X, y = table_0_1_3ft
+    X.iloc[400, 0] = np.nan
+    X_train = X.iloc[:400, :]
+    X_test = X.iloc[400:, :]
+    X_test["col1"] = X_test["col1"].astype(float)
+    y_train = y[:400]
+
+    rf = pyfru.RandomForestClassifier(100, 1, seed=1)
+    rf.fit(X_train, y_train)
+
+    with pytest.raises(BaseException, match="NA values are not supported"):
+        rf.predict(X_test)
+
+    with pytest.raises(BaseException, match="NA values are not supported"):
+        rf.predict(X_test, votes=True)
 
 
 def test_rf_cls_0_1_3ft_predict_pickle_roundtrip(table_0_1_3ft, tmp_path):

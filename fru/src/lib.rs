@@ -305,6 +305,11 @@ impl RandomForest {
             panic!("Decision length must be equal number of data frame rows")
         }
 
+        let x = Self::validate_x_na(x);
+        if y.null_count() > 0 {
+            panic!("NA values are not supported")
+        }
+
         let categorical_unique_values = get_categorical_features_unique_values(&x);
         let ncol = x.n_cols();
         let train_nrow = x.n_rows();
@@ -364,6 +369,8 @@ impl RandomForest {
     }
 
     fn validate_x(&self, x: Table) -> Table {
+        let x = Self::validate_x_na(x);
+
         map_either!(self, rf => {
             x.schema()
                 .iter()
@@ -392,6 +399,15 @@ impl RandomForest {
             );
             x
         })
+    }
+
+    fn validate_x_na(x: Table) -> Table {
+        for col in &x.cols {
+            if col.null_count > 0 {
+                panic!("NA values are not supported")
+            }
+        }
+        x
     }
 
     /// Predicts for `x`. For classification, the predicted class is the one with

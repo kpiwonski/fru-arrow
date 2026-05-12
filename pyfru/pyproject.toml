@@ -1,7 +1,8 @@
 [project]
 name = "pyfru"
 version = "0.1.0"
-description = "Add your description here"
+license = "GPL-3.0-or-later"
+description = "Blazingly fast implementation of Random Forest with arrow PyCapsule (pandas, polars, pyarrow etc.) support"
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.0.0",

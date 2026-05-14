@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+defaults:
+  run:
+    working-directory: ./pyfru
+    
 jobs:
   ruff:
     runs-on: ubuntu-latest
@@ -22,11 +26,9 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           args: --release --out dist
-        working-directory: ./pyfru    
       - name: pytest
         run: |
           set -e
           pip install pyfru --find-links dist
           pip install pytest
           pytest
-        working-directory: ./pyfru    

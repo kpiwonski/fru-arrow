@@ -13,7 +13,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - uses: dtolnay/rust-toolchain@nightly
     - name: Build
       run: cargo build --verbose
     - name: Format check
@@ -21,7 +22,7 @@ jobs:
     - name: Lint (Clippy)
       run: cargo clippy --all-targets --all-features -- -D warnings      
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --all-features
     - name: Cache cargo registry
       uses: actions/cache@v4
       with:

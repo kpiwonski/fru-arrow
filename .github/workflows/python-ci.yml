@@ -23,7 +23,8 @@ jobs:
       - uses: actions/setup-python@v6
       - name: Build package
         uses: PyO3/maturin-action@v1
-        args: --release --out dist
+        with:
+          args: --release --out dist
       - name: pytest
         run: |
           set -e

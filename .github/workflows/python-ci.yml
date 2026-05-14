@@ -30,4 +30,3 @@ jobs:
           pip install pyfru --find-links dist
           pip install pytest
           pytest
-        

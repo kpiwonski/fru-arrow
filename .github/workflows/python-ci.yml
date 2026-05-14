@@ -18,6 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
+      - name: Setup venv
+        run: |
+          set -e
+          python3 -m venv .venv
+          source .venv/bin/activate
       - name: Install package
         uses: PyO3/maturin-action@v1
         with:

@@ -6,10 +6,12 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+from importlib.metadata import version as get_version
+
 project = "pyfru"
 copyright = "2026, Chris Piwonski, Miron Kursa"
 author = "Chris Piwonski, Miron Kursa"
-release = "0.0.1"
+release = get_version("pyfru")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

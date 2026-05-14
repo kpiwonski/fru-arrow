@@ -33,7 +33,7 @@ jobs:
           ~/.cargo/git
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
     - name: Cache build
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: target
         key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}

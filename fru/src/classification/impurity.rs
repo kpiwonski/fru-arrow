@@ -109,7 +109,7 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
     let n = bound.len();
     let mut left = Votes::new(ys.ncat);
     let mut scanned = 0_usize;
-    
+
     bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
@@ -155,7 +155,7 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
     let n = bound.len();
     let mut left = Votes::new(ys.ncat);
     let mut scanned = 0_usize;
-    
+
     bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))

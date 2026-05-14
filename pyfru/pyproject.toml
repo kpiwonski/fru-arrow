@@ -2,12 +2,30 @@
 name = "pyfru"
 version = "0.1.0"
 license = "GPL-3.0-or-later"
-description = "Blazingly fast implementation of Random Forest with arrow PyCapsule (pandas, polars, pyarrow etc.) support"
+description = "Blazingly fast Random Forest with arrow support (pandas, polars, pyarrow etc.)"
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.0.0",
     "pyarrow>=23.0.1",
 ]
+readme = "../README.md"
+authors = [
+    { name = "Chris Piwonski", email = "fruarrow@kpiwonski.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",    
+]
+
+[project.urls]
+repository = "https://github.com/kpiwonski/fru-arrow"
 
 [project.optional-dependencies]
 dev = [
@@ -26,6 +44,7 @@ module-name = "pyfru._rust"
 [dependency-groups]
 dev = [
     "furo>=2025.12.19",
+    "myst-parser>=5.1.0",
     "ruff>=0.15.12",
     "sphinx>=9.1.0",
 ]

@@ -5,6 +5,9 @@ authors = ["Krzysztof Piwonski <fruarrow@kpiwonski.com>", "Miron B. Kursa <m@mbq
 edition="2024"
 license = "GPL-3.0-or-later"
 description = "Blazingly fast implementation of Random Forest with apache arrow support"
+readme = "../README.md"
+keywords = ["machine-learning", "ml", "random-forest", "decision-tree"]
+categories = ["artificial-intelligence"]
 
 [dependencies]
 xrf = {version="0.1.7"}

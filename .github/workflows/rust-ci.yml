@@ -17,6 +17,8 @@ jobs:
     - uses: dtolnay/rust-toolchain@nightly
     - name: Build
       run: cargo build --verbose
+    - name: Add fmt and clippy
+      run: rustup component add rustfmt clippy
     - name: Format check
       run: cargo fmt -- --check
     - name: Lint (Clippy)

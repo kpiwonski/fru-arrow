@@ -15,9 +15,6 @@ jobs:
       - run: ruff format --check
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./pyfru    
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -25,9 +22,11 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           args: --release --out dist
+        working-directory: ./pyfru    
       - name: pytest
         run: |
           set -e
           pip install pyfru --find-links dist
           pip install pytest
           pytest
+        working-directory: ./pyfru    

@@ -40,6 +40,7 @@ build-backend = "maturin"
 [tool.maturin]
 python-source = "python"
 module-name = "pyfru._rust"
+features = ["pyo3/extension-module"]
 
 [dependency-groups]
 dev = [

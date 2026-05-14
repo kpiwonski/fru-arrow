@@ -31,5 +31,5 @@ jobs:
         run: |
           set -e
           pip install pyfru --find-links dist
-          pip install pytest
+          pip install pytest pandas
           pytest

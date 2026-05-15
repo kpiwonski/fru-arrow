@@ -39,8 +39,9 @@ jobs:
         run: pip install maturin sphinx furo myst-parser 
       - name: Build wheel
         run: maturin build --release --out dist
+        working-directory: ./pyfru
       - name: Install pyfru
-        run: pip install pyfru --find-links dist
+        run: pip install pyfru --find-links pyfru/dist
       - name: Build docs
         run: make html
         working-directory: ./pyfru/python/docs

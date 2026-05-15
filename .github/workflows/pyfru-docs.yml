@@ -30,15 +30,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-python@v6
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Install packages
-        uses: actions/setup-python@v6
         run: pip install sphinx furo myst-parser 
       - name: Build docs
-        uses: actions/setup-python@v6
         run: make html
         working-directory: ./pyfru/python/docs
       - name: Upload artifact

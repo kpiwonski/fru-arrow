@@ -25,7 +25,7 @@ jobs:
       - name: Install packages
         run: pip install maturin pytest pandas
       - name: Build wheel
-        run: maturin --release --out dist
+        run: maturin build --release --out dist
       - name: Install package
         run: pip install pyfru --find-links dist
       - name: pytest

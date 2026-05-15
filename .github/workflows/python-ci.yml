@@ -1,4 +1,4 @@
-name: Rust
+name: Python CI
 
 on:
   push:
@@ -22,14 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
-      - name: Build package
-        uses: PyO3/maturin-action@v1
-        with:
-          args: --release --out dist
-          working-directory: ./pyfru
+      - name: Install packages
+        run: pip install maturin pytest pandas
+      - name: Build wheel
+        run: maturin --release --out dist
+      - name: Install package
+        run: pip install pyfru --find-links dist
       - name: pytest
-        run: |
-          set -e
-          pip install pyfru --find-links dist
-          pip install pytest pandas
-          pytest
+        run: pytest

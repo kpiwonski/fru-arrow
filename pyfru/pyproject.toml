@@ -45,4 +45,3 @@ build-backend = "maturin"
 python-source = "python"
 module-name = "pyfru._rust"
 features = ["pyo3/extension-module"]
-

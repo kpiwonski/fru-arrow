@@ -36,15 +36,18 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Install packages
-        run: pip install sphinx furo myst-parser 
+        run: pip install maturin sphinx furo myst-parser 
+      - name: Build wheel
+        run: maturin build --release --out dist
+      - name: Install pyfru
+        run: pip install pyfru --find-links dist
       - name: Build docs
         run: make html
         working-directory: ./pyfru/python/docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: './pyfru/python/docs/_build/'
+          path: './pyfru/python/docs/_build/html'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

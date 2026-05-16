@@ -134,6 +134,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "log"
+version = "0.4.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
+
+[[package]]
 name = "memoffset"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -144,20 +150,21 @@ dependencies = [
 
 [[package]]
 name = "minarrow"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fefef9032f782049845b549c4aac57699546551e99da0fa6ffb46e2f61226b56"
+checksum = "2e6b70631849c461b7035e68e658b22fcd197cb866867bcb0e89b48d178904ef"
 dependencies = [
  "libc",
+ "log",
  "num-traits",
  "vec64",
 ]
 
 [[package]]
 name = "minarrow-pyo3"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f5303bb73abcc9530d07db0cfbf283e40110760d96611086f073aedbf066375"
+checksum = "294e3d8a45098144132a1fff42c097f620057bd2e237b9648f8d102e84339af6"
 dependencies = [
  "minarrow",
  "pyo3",
@@ -457,9 +464,9 @@ checksum = "7264e107f553ccae879d21fbea1d6724ac785e8c3bfc762137959b5802826ef3"
 
 [[package]]
 name = "vec64"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98adb8aed5f3be39cddb565bf782bcb5798a6b1318d9e1b256575a08ed14b983"
+checksum = "ab11c17e084a1c1852fadc336d5388a85ce66aed2a37fc07345e8d587688b23e"
 
 [[package]]
 name = "wasip2"

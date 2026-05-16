@@ -1,4 +1,4 @@
-# Fru
+# Fru-arrow
 
 [R version](https://cran.r-project.org/web/packages/fru/index.html)
 

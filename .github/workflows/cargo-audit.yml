@@ -1,14 +1,9 @@
 name: Cargo security audit
 
-github-token:
-  action-input:
-    input: token
-    is-default: false
-  permissions:
-    issues: write
-    issues-reason: to create issues
-    checks: write
-    checks-reason: to create check
+permissions:
+  contents: read
+  checks: write
+  issues: write
 
 on:
   push:

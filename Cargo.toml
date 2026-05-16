@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "fru",
+    "fru-arrow",
     "pyfru",
 ]
 

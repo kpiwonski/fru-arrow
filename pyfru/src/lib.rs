@@ -8,7 +8,7 @@ mod pyfru {
     use pyo3::{prelude::*, types::PyBytes};
 
     #[pyclass]
-    struct RandomForest(fru::RandomForest);
+    struct RandomForest(fru_arrow::RandomForest);
 
     #[pymethods]
     impl RandomForest {
@@ -39,7 +39,7 @@ mod pyfru {
                         _ => unreachable!("Decision is not categorical"),
                     };
 
-                    RandomForest(fru::RandomForest::fit(
+                    RandomForest(fru_arrow::RandomForest::fit(
                         df,
                         y_array.into(),
                         trees,
@@ -69,7 +69,7 @@ mod pyfru {
                         _ => unreachable!("Decision is not numeric"),
                     };
 
-                    RandomForest(fru::RandomForest::fit(
+                    RandomForest(fru_arrow::RandomForest::fit(
                         df,
                         y_array.into(),
                         trees,
@@ -136,9 +136,9 @@ mod pyfru {
 
         #[staticmethod]
         fn from_bytes(bytes: &[u8]) -> PyResult<Self> {
-            Ok(Self(fru::RandomForest::from_bytes(bytes).map_err(|e| {
-                PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{e}"))
-            })?))
+            Ok(Self(fru_arrow::RandomForest::from_bytes(bytes).map_err(
+                |e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{e}")),
+            )?))
         }
     }
 }

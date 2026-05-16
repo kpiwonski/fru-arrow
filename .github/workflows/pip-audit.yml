@@ -1,17 +1,14 @@
 name: Pip security audit
 
-# on:
-#   push:
-#     paths: 
-#       - '**/Cargo.toml'
-#       - '**/Cargo.lock'
-
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
- 
+    paths: 
+      - '**/pyproject.toml'
+      - '**/uv.lock'
+
+  schedule:
+    - cron: '0 0 * * *'
+
 jobs:
   pip-audit:
     runs-on: ubuntu-latest

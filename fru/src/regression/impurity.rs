@@ -92,7 +92,7 @@ pub fn scan_float<T: Copy + PartialOrd + Add<T, Output = T> + Into<f64>>(
 
     let mut left = VarAggregator::new();
     let mut right = ys.summary.clone();
-    
+
     bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))
@@ -124,7 +124,7 @@ pub fn scan_integer<T: Copy + Ord + Into<DfPivot> + MidpointThreshold>(
 
     let mut left = VarAggregator::new();
     let mut right = ys.summary.clone();
-    
+
     bound
         .windows(2)
         .map(|x| (x[0].0, x[1].0, x[0].1))

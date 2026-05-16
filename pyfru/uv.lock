@@ -506,34 +506,26 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "pandas" },
-    { name = "pytest" },
-]
-
-[package.dev-dependencies]
-dev = [
     { name = "furo" },
     { name = "myst-parser" },
+    { name = "pandas" },
+    { name = "pytest" },
     { name = "ruff" },
     { name = "sphinx" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "furo", marker = "extra == 'dev'", specifier = ">=2025.12.19" },
+    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=5.1.0" },
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "pandas", marker = "extra == 'dev'", specifier = ">=3" },
     { name = "pyarrow", specifier = ">=23.0.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.12" },
+    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=9.1.0" },
 ]
 provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "furo", specifier = ">=2025.12.19" },
-    { name = "myst-parser", specifier = ">=5.1.0" },
-    { name = "ruff", specifier = ">=0.15.12" },
-    { name = "sphinx", specifier = ">=9.1.0" },
-]
 
 [[package]]
 name = "pygments"

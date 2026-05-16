@@ -1,6 +1,7 @@
 # Fru
 
-[R version](https://cran.r-project.org/web/packages/fru/index.html)
+[R version](https://cran.r-project.org/web/packages/fru/index.html) |
+[Pyfru docs](https://kpiwonski.github.io/fru-arrow/)
 
 Fru-arrow is a highly performant implementation of the **Random Forest** model. It uses Arrow PyCapsule underneath,
 making integration with any library that supports it - ``polars``, ``pandas``, ``pyarrow`` straightforward.

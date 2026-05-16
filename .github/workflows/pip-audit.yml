@@ -1,0 +1,20 @@
+name: Pip security audit
+
+# on:
+#   push:
+#     paths: 
+#       - '**/Cargo.toml'
+#       - '**/Cargo.lock'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+ 
+jobs:
+  pip-audit:
+    steps:
+      - uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: pyfru/

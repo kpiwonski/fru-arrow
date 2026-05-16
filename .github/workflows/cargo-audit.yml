@@ -6,15 +6,10 @@ permissions:
   issues: write
 
 on:
-  # push:
-  #   paths: 
-  #     - '**/Cargo.toml'
-  #     - '**/Cargo.lock'
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
+    paths: 
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
   schedule:
     - cron: '0 0 * * *'
 

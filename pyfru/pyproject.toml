@@ -26,6 +26,7 @@ classifiers = [
 
 [project.urls]
 repository = "https://github.com/kpiwonski/fru-arrow"
+documentation = "https://kpiwonski.github.io/fru-arrow/"
 
 [project.optional-dependencies]
 dev = [

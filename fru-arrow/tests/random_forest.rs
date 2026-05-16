@@ -1,4 +1,4 @@
-use fru::RandomForest;
+use fru_arrow::RandomForest;
 use minarrow::{
     Array, BooleanArray, FieldArray, FloatArray, IntegerArray, RowSelection, Table, TextArray,
 };

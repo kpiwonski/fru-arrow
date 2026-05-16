@@ -5,11 +5,18 @@ permissions:
   checks: write
   issues: write
 
+# on:
+#   push:
+#     paths: 
+#       - '**/Cargo.toml'
+#       - '**/Cargo.lock'
+
 on:
   push:
-    paths: 
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
 jobs:
   security_audit:
     runs-on: ubuntu-latest

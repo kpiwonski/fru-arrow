@@ -1,0 +1,25 @@
+name: Publish to crates
+
+on:
+  push:
+    tags:
+      - "version-*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+  steps:
+    - uses: actions/checkout@v6
+    - name: Login into crates.io
+      run: cargo login ${{ secrets.CRATES_IO }}
+    - name: Build binaries in "release" mode
+      run: cargo build -r
+    - name: "Package for crates.io"
+      run: cargo package # publishes a package as a tarball
+    - name: "Publish to crates.io"
+      run: cargo publish # publishes your crate as a library that can be added as a dependency

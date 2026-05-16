@@ -1,0 +1,28 @@
+name: Cargo security audit
+
+permissions:
+  contents: read
+  checks: write
+  issues: write
+
+# on:
+#   push:
+#     paths: 
+#       - '**/Cargo.toml'
+#       - '**/Cargo.lock'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+      - uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

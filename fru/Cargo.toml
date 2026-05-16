@@ -8,6 +8,7 @@ description = "Blazingly fast implementation of Random Forest with apache arrow 
 readme = "../README.md"
 keywords = ["machine-learning", "ml", "random-forest", "decision-tree"]
 categories = ["artificial-intelligence"]
+repository = "https://github.com/kpiwonski/fru-arrow"
 
 [dependencies]
 xrf = {version="0.1.7"}

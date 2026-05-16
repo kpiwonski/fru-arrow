@@ -41,8 +41,6 @@ impl AccuracyDecreaseAggregator<DataFrame> for DaAggregator {
         self.direct.get(e).unwrap().unwrap()
     }
     fn mda_iter(&self) -> impl Iterator<Item = (<DataFrame as RfInput>::FeatureId, f64)> {
-        self.drops
-            .iter()
-            .map(|(a, b)| (*a, *b / (self.n as f64)))
+        self.drops.iter().map(|(a, b)| (*a, *b / (self.n as f64)))
     }
 }

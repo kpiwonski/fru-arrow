@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-#[pymodule]
+#[pymodule(gil_used = false)]
 #[pyo3(name = "_rust")]
 mod pyfru {
     use minarrow::{Array, CategoricalArray, FloatArray, NumericArray, TextArray};

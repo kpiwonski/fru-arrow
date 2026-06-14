@@ -4,18 +4,11 @@ Getting started
 
 Installation
 ------------
-The process is similar to installing other Python packages. Use your preferred tool — ``pip``, ``poetry``, or ``uv``.
+The process is similar to installing other Python packages.
+The Python version of fru is available as `pyfru` on PyPI.
+Use your favorite package manager to install it.
 
-.. code-block:: bash
-
-    mkdir test_pyfru && cd test_pyfru
-    python -m venv .venv
-    source .venv/bin/activate
-    pip install scikit-learn pyfru
-
-    # Optional: install additional libraries for data handling
-    pip install pandas
-
+For this tutorial, you will also need `pandas` and `polars`.
 
 Basic usage example
 -------------------

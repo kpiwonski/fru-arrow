@@ -7,6 +7,7 @@ Installation
 The process is similar to installing other Python packages.
 The Python version of fru is available as `pyfru` on PyPI.
 Use your favorite package manager to install it.
+The package requires `python >= 3.12`.
 
 For this tutorial, you will also need `pandas` and `polars`.
 

@@ -8,9 +8,9 @@ making integration with any library that supports it - ``polars``, ``pandas``, `
 Moreover, it features permutation importance with a novel, highly optimized algorithm.
 It can be used for both **classification** and **regression**, as well as out-of-bag predictions.
 
-Fru is typically 10 to several thousand times faster than the scikit-learn implementation of Random Forest.
-The gap increases as you use more threads.
+Fru is typically anywhere from a few times to several thousand times faster than scikit-learn's Random Forest implementation.
+The performance gap widens as the number of threads increases.
 
-The plot below shows how the difference scales with the number of threads on the Iris dataset.
+The plot below illustrates this difference.
 
 ![Compare to scikit](https://raw.githubusercontent.com/kpiwonski/fru-arrow/refs/heads/main/plt_cmp_scikit.png)

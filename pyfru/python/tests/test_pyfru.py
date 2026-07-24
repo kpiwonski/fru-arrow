@@ -2,8 +2,9 @@ import pickle
 
 import numpy as np
 import pandas as pd
-import pyfru
 import pytest
+
+import pyfru
 
 
 @pytest.fixture
@@ -292,8 +293,11 @@ def test_rf_cls_0_1_3ft_pickle_without_save_forest(table_0_1_3ft, tmp_path):
     rf.fit(X, y)
 
     model_path = tmp_path / "model.pkl"
-    with open(model_path, "wb") as f, pytest.raises(
-        ValueError, match="Cannot serialize model, when forest is not saved"
+    with (
+        open(model_path, "wb") as f,
+        pytest.raises(
+            ValueError, match="Cannot serialize model, when forest is not saved"
+        ),
     ):
         pickle.dump(rf, f)
 

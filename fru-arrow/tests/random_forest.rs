@@ -46,7 +46,7 @@ fn rf_cls_check_0_1_3ft() {
 
     let df_vec = vec![a1, a2, a3];
     let rf = RandomForest::fit(
-        Table::new("table".into(), df_vec.into()),
+        Table::new("table".to_string(), df_vec.into()),
         Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
         100,
         1,
@@ -89,7 +89,7 @@ fn rf_cls_importance_0_1_interactions() {
     }
 
     let rf = RandomForest::fit(
-        Table::new("table".into(), df_vec.into()),
+        Table::new("table".to_string(), df_vec.into()),
         Array::from_categorical64(CategoricalArray::from_slices(&y_ins, &unique_values)),
         1000,
         10,
@@ -136,7 +136,7 @@ fn rf_cls_oob_0_1_interactions() {
     let yy = y.clone();
 
     let rf = RandomForest::fit(
-        Table::new("table".into(), df_vec.into()),
+        Table::new("table".to_string(), df_vec.into()),
         Array::from_categorical64(y),
         1000,
         3,
@@ -200,7 +200,7 @@ fn rf_cls_predict_0_1_interactions() {
     }
     let unique_values = vec![String::from("false"), String::from("true")];
     let y = CategoricalArray::from_slices(&y_ins[0..100], &unique_values);
-    let df = Table::new("table".into(), df_vec.into());
+    let df = Table::new("table".to_string(), df_vec.into());
 
     let rf = RandomForest::fit(
         df.r(0..100).to_table(),
@@ -275,7 +275,7 @@ fn rf_cls_check_0_1_4ft_mixed_dtypes() {
         new_arr_bool("x_bool", x_bool),
     ];
     let rf = RandomForest::fit(
-        Table::new("table".into(), df_vec.into()),
+        Table::new("table".to_string(), df_vec.into()),
         Array::from_categorical64(CategoricalArray::from_slices(&y, &unique_values)),
         100,
         1,
@@ -309,7 +309,7 @@ fn rf_reg_check_0_1_3ft() {
 
     let df_vec = vec![a1, a2, a3];
     let rf = RandomForest::fit(
-        Table::new("table".into(), df_vec.into()),
+        Table::new("table".to_string(), df_vec.into()),
         Array::from_float64(FloatArray::from_slice(&y)),
         100,
         1,
@@ -339,7 +339,7 @@ fn rf_reg_predict_linear() {
     let y_ins = x1.clone();
     let df_vec = vec![new_arr_f64("x1", x1)];
     let y = FloatArray::from_slice(&y_ins[..400]);
-    let df = Table::new("table".into(), df_vec.into());
+    let df = Table::new("table".to_string(), df_vec.into());
 
     let rf = RandomForest::fit(
         df.r(0..400).to_table(),
@@ -381,7 +381,7 @@ fn rf_reg_oob_linear() {
     let y_ins = x1.clone();
     let df_vec = vec![new_arr_f64("x1", x1)];
     let y = FloatArray::from_slice(&y_ins);
-    let df = Table::new("table".into(), df_vec.into());
+    let df = Table::new("table".to_string(), df_vec.into());
 
     let rf = RandomForest::fit(
         df,
@@ -427,7 +427,7 @@ fn rf_reg_predict_votes_should_panic() {
     let y_ins = x1.clone();
     let df_vec = vec![new_arr_f64("x1", x1)];
     let y = FloatArray::from_slice(&y_ins[..400]);
-    let df = Table::new("table".into(), df_vec.into());
+    let df = Table::new("table".to_string(), df_vec.into());
 
     let rf = RandomForest::fit(
         df.r(..400).to_table(),
@@ -455,7 +455,7 @@ fn rf_reg_oob_votes_should_panic() {
     let y_ins = x1.clone();
     let df_vec = vec![new_arr_f64("x1", x1)];
     let y = FloatArray::from_slice(&y_ins);
-    let df = Table::new("table".into(), df_vec.into());
+    let df = Table::new("table".to_string(), df_vec.into());
 
     let rf = RandomForest::fit(
         df,
@@ -493,7 +493,7 @@ fn rf_cls_predict_0_1_interactions_serialize_round_trip() {
     }
     let unique_values = vec![String::from("false"), String::from("true")];
     let y = CategoricalArray::from_slices(&y_ins[0..100], &unique_values);
-    let df = Table::new("table".into(), df_vec.into());
+    let df = Table::new("table".to_string(), df_vec.into());
 
     let rf = RandomForest::fit(
         df.r(0..100).to_table(),

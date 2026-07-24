@@ -154,7 +154,7 @@ impl RandomForest {
             "importance",
             Array::from_float64(FloatArray::from_slice(&imp)),
         );
-        Table::new("importance".into(), vec![col_names, imp_arr].into())
+        Table::new("importance".to_string(), vec![col_names, imp_arr].into())
     }
 
     /// Returns out-of-bag predictions for the model.
@@ -241,7 +241,7 @@ impl RandomForest {
         let decision_unique_values = self.decision_unique_values();
 
         Table::new(
-            "oob_votes".into(),
+            "oob_votes".to_string(),
             col_arrays
                 .into_iter()
                 .enumerate()
@@ -403,7 +403,7 @@ impl RandomForest {
 
     fn validate_x_na(x: Table) -> Table {
         for col in &x.cols {
-            if col.null_count > 0 {
+            if col.array.has_nulls() {
                 panic!("NA values are not supported")
             }
         }
@@ -552,7 +552,7 @@ impl RandomForest {
         let decision_unique_values = self.decision_unique_values();
 
         Table::new(
-            "predict_votes".into(),
+            "predict_votes".to_string(),
             col_arrays
                 .into_iter()
                 .enumerate()

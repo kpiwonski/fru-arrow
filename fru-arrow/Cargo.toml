@@ -1,6 +1,6 @@
 [package]
 name = "fru-arrow"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Krzysztof Piwonski <fruarrow@kpiwonski.com>", "Miron B. Kursa <m@mbq.me>"]
 edition="2024"
 license = "GPL-3.0-or-later"

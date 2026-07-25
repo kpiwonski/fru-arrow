@@ -11,7 +11,7 @@ class ResultTable:
         self.to_pycapsule = to_pycapsule
 
     def __arrow_c_stream__(self, requested_schema=None):
-        return self.obj.__arrow_c_stream__()
+        return self.obj.__arrow_c_stream__(requested_schema)
 
     def get_df(self):
         if not self.to_pycapsule:
@@ -37,9 +37,9 @@ class ImportanceResultTable:
         self.to_pycapsule = to_pycapsule
 
     def __arrow_c_stream__(self, requested_schema=None):
-        return self.obj.__arrow_c_stream__()
+        return self.obj.__arrow_c_stream__(requested_schema)
 
-    def get_array(self):
+    def get_table(self):
         if not self.to_pycapsule:
             return self._df_to_numpy()
         return self
@@ -63,7 +63,7 @@ class ResultArray:
         self.to_pycapsule = to_pycapsule
 
     def __arrow_c_array__(self, requested_schema=None):
-        return self.obj.__arrow_c_array__()
+        return self.obj.__arrow_c_array__(requested_schema)
 
     def get_array(self):
         if not self.to_pycapsule:

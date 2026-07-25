@@ -81,7 +81,7 @@ mod pyfru {
                         threads,
                     ))
                 } else {
-                    unreachable!("Decision is not categorical")
+                    unreachable!("Decision is not numeric")
                 }
             }
         }

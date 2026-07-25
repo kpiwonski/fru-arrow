@@ -70,7 +70,7 @@ class _RandomForestBase(ABC):
         the number of trees compared to fru.
         """
         importance = self._forest.importance(scale)
-        return ImportanceResultTable(importance, to_pycapsule=to_pycapsule).get_array()
+        return ImportanceResultTable(importance, to_pycapsule=to_pycapsule).get_table()
 
     def _get_seed(self):
         return self.seed if self.seed is not None else secrets.randbits(64)

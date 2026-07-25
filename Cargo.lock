@@ -58,7 +58,7 @@ checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
 name = "fru-arrow"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "minarrow",
  "postcard",
@@ -208,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "pyfru"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fru-arrow",
  "minarrow",
